@@ -1,0 +1,55 @@
+/*
+  Kontainer cetak ini berisi duplikat kuitansi yang tidak terlihat.
+  Ini digunakan oleh fungsi print() untuk membuat iframe terisolasi untuk pencetakan,
+  memastikan hasil yang bersih dan pas di halaman tanpa elemen UI lainnya.
+*/
+.print-container {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-container {
+    display: block !important;
+  }
+}
+
+@media print {
+  :host ::ng-deep body * {
+    visibility: hidden !important;
+  }
+
+  :host ::ng-deep #receiptContent,
+  :host ::ng-deep #receiptContent * {
+    visibility: visible !important;
+  }
+
+  :host ::ng-deep #receiptContent {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* Mobile Scrollable Preview */
+@media (max-width: 767px) {
+  /* This is the scroll container */
+  .receipt-preview-wrapper {
+    flex-grow: 1; /* Allow it to take available space inside the flex-col modal */
+    overflow-x: auto; /* Enable horizontal scrolling */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  }
+
+  /* This is the actual receipt content, force it to be wide */
+  .receipt-preview-wrapper .receipt-content {
+    width: 28cm; /* Approx A4 landscape width */
+    min-width: 950px; /* Fallback fixed width */
+  }
+}

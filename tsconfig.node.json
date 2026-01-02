@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "types": ["node"]
+  },
+  "include": ["vite.config.js", "electron-main.cjs", "preload.cjs"]
+}

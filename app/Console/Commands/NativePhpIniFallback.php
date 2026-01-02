@@ -1,0 +1,2 @@
+<?php
+namespace App\Console\Commands;use Illuminate\Console\Command;class NativePhpIniFallback extends Command{protected $signature='native:php-ini';protected $description='Provide PHP ini configuration for NativePHP (fallback command)';public function handle():int{echo json_encode(config('nativephp.php_ini',[]));return Command::SUCCESS;}}

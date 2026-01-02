@@ -1,0 +1,78 @@
+<?php
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PenjualanController;
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\LotController;
+use App\Http\Controllers\BuyerController;
+use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\DataManagementController;
+use App\Http\Controllers\LicenseController;
+use App\Http\Middleware\EnsureLicenseIsActive;
+Route::get('/login', function () {
+    $licenseService = app(\App\Services\LicenseService::class);
+    $local = $licenseService->loadLocalLicense();
+    if (!$local || empty($local['license_key'])) {
+        return redirect()->route('license.activate.form')->withErrors(['msg' => 'File lisensi tidak ditemukan. Silakan aktivasi lisensi baru.']);
+    }return view('auth.login');
+})->name('login');
+Route::post('/login', [LicenseController::class, 'processAuthLogin'])->name('auth.login');
+Route::get('/reset', function () {
+    $licenseService = app(\App\Services\LicenseService::class);
+    $local = $licenseService->loadLocalLicense();
+    if (!$local || empty($local['license_key'])) {
+        return redirect()->route('license.activate.form')->withErrors(['msg' => 'Tidak ada lisensi yang tersimpan. Silakan aktivasi terlebih dahulu.']);
+    }return view('auth.resetpage');
+})->name('reset');
+Route::post('/reset', [LicenseController::class, 'processAuthReset'])->name('auth.reset');
+Route::get('/activate', [LicenseController::class, 'showActivate'])->name('license.activate.form');
+Route::post('/activate', [LicenseController::class, 'processActivate'])->name('license.activate');
+Route::post('/license/reset', [LicenseController::class, 'reset'])->name('license.reset');
+Route::post('/license/revalidate', [LicenseController::class, 'revalidate'])->name('license.revalidate');
+Route::get('/license/blocked', [LicenseController::class, 'blocked'])->name('license.blocked');
+Route::get('/license/locked', [LicenseController::class, 'locked'])->name('license.locked');
+Route::get('/logout', function () {
+    session()->forget('license_authenticated');
+    session()->forget('license_user_email');
+    session()->invalidate();
+    session()->regenerateToken();
+    return redirect()->route('login');
+})->name('logout');
+Route::get('/native-img/logos/{filename}', function ($filename) {
+    $path = storage_path('app/public/logos/' . $filename);
+    if (!file_exists($path)) {
+        abort(404);
+    }$file = file_get_contents($path);
+    $type = mime_content_type($path);
+    $response = Response::make($file, 200);
+    $response->header("Content-Type", $type);
+    return $response;
+});
+Route::middleware([EnsureLicenseIsActive::class])->group(function () {
+    Route::get('/', function () {
+        return redirect()->route('dashboard');
+    });
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('kavling/{lot}/pricing', [LotController::class, 'pricing'])->name('kavling.pricing');
+    Route::resource('penjualan', PenjualanController::class);
+    Route::post('penjualan/{sale}/cancel', [PenjualanController::class, 'cancel'])->name('penjualan.cancel');
+    Route::patch('penjualan/{sale}/notes', [PenjualanController::class, 'updateNotes'])->name('penjualan.updateNotes');
+    Route::post('penjualan/{sale}/approve-kpr', [PenjualanController::class, 'approveKpr'])->name('penjualan.approveKpr');
+    Route::post('penjualan/{sale}/pay-off', [PenjualanController::class, 'payOffCash'])->name('penjualan.payOffCash');
+    Route::resource('projects', ProjectController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::resource('kavling', LotController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::resource('buyers', BuyerController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::resource('marketing', MarketingController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+    Route::post('payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::patch('payments/{payment}', [PaymentController::class, 'update'])->name('payments.update');
+    Route::get('/profil-perusahaan', [CompanyController::class, 'index'])->name('profile.index');
+    Route::post('/profil-perusahaan', [CompanyController::class, 'update'])->name('profile.update');
+    Route::get('/manajemen-data', [DataManagementController::class, 'index'])->name('data.index');
+    Route::post('/manajemen-data/demo', [DataManagementController::class, 'loadDemo'])->name('data.demo');
+    Route::post('/manajemen-data/reset', [DataManagementController::class, 'reset'])->name('data.reset');
+    Route::get('/manajemen-data/backup', [DataManagementController::class, 'backup'])->name('data.backup');
+    Route::post('/manajemen-data/restore', [DataManagementController::class, 'restore'])->name('data.restore');
+});

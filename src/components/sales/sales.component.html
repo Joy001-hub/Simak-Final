@@ -1,0 +1,430 @@
+<div class="p-4 sm:p-8">
+    @if (selectedSaleId(); as saleId) {
+        <app-sale-detail [saleId]="saleId" (close)="closeDetail()"></app-sale-detail>
+    } @else {
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Penjualan Kavling</h1>
+            <button (click)="openAddModal()" class="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Tambah Penjualan
+            </button>
+        </div>
+
+        <!-- Filter Section -->
+        <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <!-- Project Name -->
+                <div>
+                    <label for="filterProjectName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Kavling</label>
+                    <input type="text" id="filterProjectName" [value]="filterProjectName()" (input)="onFilterChange(filterProjectName, $event)" placeholder="Cari nama proyek..." class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <!-- Customer Name -->
+                <div>
+                    <label for="filterCustomerName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Pembeli</label>
+                    <input type="text" id="filterCustomerName" [value]="filterCustomerName()" (input)="onFilterChange(filterCustomerName, $event)" placeholder="Cari nama pembeli..." class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <!-- Date Range -->
+                <div class="lg:col-span-2 grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="filterStartDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tgl Booking (dari)</label>
+                        <input type="date" id="filterStartDate" [value]="filterStartDate()" (change)="onFilterChange(filterStartDate, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="filterEndDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tgl Booking (sampai)</label>
+                        <input type="date" id="filterEndDate" [value]="filterEndDate()" (change)="onFilterChange(filterEndDate, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    </div>
+                </div>
+                 <!-- Payment Method -->
+                <div>
+                    <label for="filterPaymentMethod" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Metode Bayar</label>
+                    <select id="filterPaymentMethod" [value]="filterPaymentMethod()" (change)="onFilterChange(filterPaymentMethod, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">Semua</option>
+                        @for(m of paymentMethods(); track m.id) { <option [value]="m.id">{{m.name}}</option> }
+                    </select>
+                </div>
+                <!-- Billing Status -->
+                <div>
+                    <label for="filterBillingStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status Tagihan</label>
+                    <select id="filterBillingStatus" [value]="filterBillingStatus()" (change)="onFilterChange(filterBillingStatus, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">Semua</option>
+                        <option value="urgent">Ada Tunggakan</option>
+                        <option value="attention">Jatuh Tempo &lt; 7 Hari</option>
+                        <option value="safe">Aman</option>
+                    </select>
+                </div>
+                <!-- DP Status -->
+                <div>
+                    <label for="filterDpStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status DP</label>
+                    <select id="filterDpStatus" [value]="filterDpStatus()" (change)="onFilterChange(filterDpStatus, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">Semua</option>
+                        <option value="paid">Lunas</option>
+                        <option value="unpaid">Belum Lunas</option>
+                    </select>
+                </div>
+                <!-- Sale Status -->
+                <div>
+                    <label for="filterSaleStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status Penjualan</label>
+                    <select id="filterSaleStatus" [value]="filterSaleStatus()" (change)="onFilterChange(filterSaleStatus, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">Semua</option>
+                        <option value="active">Active</option>
+                        <option value="paid_off">Paid Off</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <!-- Salesman -->
+                <div>
+                    <label for="filterSalesmanId" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marketing</label>
+                    <select id="filterSalesmanId" [value]="filterSalesmanId()" (change)="onFilterChange(filterSalesmanId, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">Semua</option>
+                        @for(s of salesmen(); track s.id) { <option [value]="s.id">{{s.name}}</option> }
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4 text-right">
+                <button (click)="resetFilters()" class="inline-flex items-center justify-center rounded-md bg-gray-200 dark:bg-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-300 dark:hover:bg-gray-500">
+                    Reset Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- Desktop Table View -->
+        <div class="hidden md:block bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"></th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kavling</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pembeli</th>
+                            <th scope="col" (click)="onSort('bookingDate')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="flex items-center">
+                                    <span>Tgl. Booking</span>
+                                    @if (sortColumn() === 'bookingDate') {
+                                        <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            @if(sortDirection() === 'asc') { <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /> } @else { <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /> }
+                                        </svg>
+                                    }
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Metode Bayar</th>
+                            <th scope="col" (click)="onSort('grand_total')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="flex items-center">
+                                    <span>Harga Jual</span>
+                                    @if (sortColumn() === 'grand_total') {
+                                        <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            @if(sortDirection() === 'asc') { <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /> } @else { <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /> }
+                                        </svg>
+                                    }
+                                </div>
+                            </th>
+                            <th scope="col" (click)="onSort('sisa_piutang')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="flex items-center">
+                                    <span>Sisa Piutang</span>
+                                    @if (sortColumn() === 'sisa_piutang') {
+                                        <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            @if(sortDirection() === 'asc') { <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /> } @else { <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /> }
+                                        </svg>
+                                    }
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status DP</th>
+                            <th scope="col" (click)="onSort('status_penjualan')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="flex items-center">
+                                    <span>Status</span>
+                                    @if (sortColumn() === 'status_penjualan') {
+                                        <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            @if(sortDirection() === 'asc') { <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /> } @else { <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /> }
+                                        </svg>
+                                    }
+                                </div>
+                            </th>
+                            <th scope="col" (click)="onSort('estimatedCompletionDate')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <div class="flex items-center">
+                                    <span>Estimasi Lunas</span>
+                                    @if (sortColumn() === 'estimatedCompletionDate') {
+                                        <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            @if(sortDirection() === 'asc') { <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /> } @else { <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /> }
+                                        </svg>
+                                    }
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Marketing</th>
+                            <th scope="col" class="relative px-6 py-3"><span class="sr-only">View</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @for (sale of filteredSales(); track sale.id) {
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-4 py-4">
+                                    @switch(sale.billingStatus) {
+                                        @case('urgent') {
+                                            <div title="Ada Tunggakan" class="text-red-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        }
+                                        @case('attention') {
+                                            <div title="Jatuh Tempo < 7 Hari" class="text-yellow-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        }
+                                        @case('safe') {
+                                            <div title="Aman" class="text-green-500">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        }
+                                        @default {
+                                            <div title="Tidak Aktif" class="text-gray-400">
+                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM6.75 9.25a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        }
+                                    }
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{{ sale.lotInfo }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ sale.customerName }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ sale.bookingDate | date:'dd MMM yyyy' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ sale.paymentMethodName }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ sale.grand_total | currency:'IDR':'symbol':'1.0-0' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold" [class]="sale.sisa_piutang > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'">{{ sale.sisa_piutang | currency:'IDR':'symbol':'1.0-0' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [class]="getDPStatusClass(sale.status_dp) + ' ' + (sale.status_dp === 'paid' ? 'dark:bg-green-900/50 dark:text-green-300' : 'dark:bg-yellow-900/50 dark:text-yellow-300')">
+                                        {{ sale.status_dp === 'paid' ? 'Lunas' : 'Belum Lunas' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2.5 py-1 inline-flex items-center gap-x-1.5 text-xs leading-5 font-semibold rounded-full" [class]="getSaleStatusClass(sale.status_penjualan) + ' ' + (sale.status_penjualan === 'active' ? 'dark:bg-blue-900/50 dark:text-blue-300' : sale.status_penjualan === 'paid_off' ? 'dark:bg-green-900/50 dark:text-green-300' : sale.status_penjualan === 'cancelled' ? 'dark:bg-red-900/50 dark:text-red-300' : 'dark:bg-gray-700 dark:text-gray-300')">
+                                        @if (sale.status_penjualan === 'paid_off') { <span>🤝</span> }
+                                        @if (sale.status_penjualan === 'cancelled') { <span class="font-bold text-base -mt-0.5">✘</span> }
+                                        <span class="capitalize">{{ sale.status_penjualan.replace('_', ' ') }}</span>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ sale.estimatedCompletionDate | date:'MMM yyyy' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ sale.salesmanName }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button (click)="selectSale(sale.id)" class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300">Lihat Detail</button>
+                                </td>
+                            </tr>
+                        } @empty {
+                           <tr>
+                             <td colspan="12" class="text-center py-10 text-gray-500 dark:text-gray-400">
+                                @if (dataService.soldLotsSummary().length > 0) {
+                                  <span>Tidak ada data penjualan yang cocok dengan kriteria filter Anda.</span>
+                                } @else {
+                                  <span>Tidak ada data penjualan kavling.</span>
+                                }
+                             </td>
+                           </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Mobile Card View -->
+        <div class="md:hidden space-y-4">
+            @for (sale of filteredSales(); track sale.id) {
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            @switch(sale.billingStatus) {
+                                @case('urgent') {
+                                    <div title="Ada Tunggakan" class="text-red-500 flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
+                                    </div>
+                                }
+                                @case('attention') {
+                                    <div title="Jatuh Tempo < 7 Hari" class="text-yellow-500 flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd" /></svg>
+                                    </div>
+                                }
+                                @case('safe') {
+                                    <div title="Aman" class="text-green-500 flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" /></svg>
+                                    </div>
+                                }
+                                @default {
+                                    <div title="Tidak Aktif" class="text-gray-400 flex-shrink-0">
+                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-6 h-6"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM6.75 9.25a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z" clip-rule="evenodd" /></svg>
+                                    </div>
+                                }
+                            }
+                            <div>
+                                <p class="font-bold text-gray-800 dark:text-gray-100">{{ sale.lotInfo }}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-300">{{ sale.customerName }}</p>
+                            </div>
+                        </div>
+                         <span class="px-2.5 py-1 inline-flex items-center gap-x-1.5 text-xs leading-5 font-semibold rounded-full flex-shrink-0" [class]="getSaleStatusClass(sale.status_penjualan) + ' ' + (sale.status_penjualan === 'active' ? 'dark:bg-blue-900/50 dark:text-blue-300' : sale.status_penjualan === 'paid_off' ? 'dark:bg-green-900/50 dark:text-green-300' : sale.status_penjualan === 'cancelled' ? 'dark:bg-red-900/50 dark:text-red-300' : 'dark:bg-gray-700 dark:text-gray-300')">
+                            @if (sale.status_penjualan === 'paid_off') { <span>🤝</span> }
+                            @if (sale.status_penjualan === 'cancelled') { <span class="font-bold text-base -mt-0.5">✘</span> }
+                            <span class="capitalize">{{ sale.status_penjualan.replace('_', ' ') }}</span>
+                        </span>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Tgl Booking:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">{{ sale.bookingDate | date:'dd MMM yyyy' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Harga Jual:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">{{ sale.grand_total | currency:'IDR':'symbol':'1.0-0' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Sisa Piutang:</span>
+                            <span class="font-semibold" [class]="sale.sisa_piutang > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-200'">{{ sale.sisa_piutang | currency:'IDR':'symbol':'1.0-0' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Marketing:</span>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">{{ sale.salesmanName }}</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-right">
+                        <button (click)="selectSale(sale.id)" class="text-sm bg-primary-900 text-white rounded-md py-1.5 px-3 hover:bg-primary-800">
+                            Lihat Detail
+                        </button>
+                    </div>
+                </div>
+            } @empty {
+                <div class="text-center py-10 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg shadow">
+                    @if (dataService.soldLotsSummary().length > 0) {
+                      <span>Tidak ada data penjualan yang cocok dengan kriteria filter Anda.</span>
+                    } @else {
+                      <span>Tidak ada data penjualan kavling.</span>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+
+<!-- Add Sale Modal -->
+@if (showAddModal()) {
+    <div class="fixed inset-0 z-10 overflow-y-auto bg-gray-500 bg-opacity-75 transition-opacity">
+        <div class="flex min-h-full items-center justify-center p-4 text-center">
+            <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+                <div class="bg-white dark:bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <h3 class="text-xl font-semibold leading-6 text-gray-900 dark:text-gray-100" id="modal-title">Form Penjualan Baru</h3>
+                    <div class="mt-5 grid grid-cols-1 gap-y-4 sm:grid-cols-4 sm:gap-x-4">
+                        
+                        <div class="sm:col-span-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Data Utama</h4></div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="lot" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kavling (Tersedia)</label>
+                            <select id="lot" (change)="onFormValueChange(newSaleLotId, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                                <option [value]="null" disabled selected>Pilih Kavling</option>
+                                @for(lot of availableLots(); track lot.id) {
+                                    <option [value]="lot.id">{{lot.block}}/{{lot.lot_number}} - {{lot.base_price | currency:'IDR':'symbol':'1.0-0'}}</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="customer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pelanggan</label>
+                            <select id="customer" (change)="onFormValueChange(newSaleCustomerId, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                                <option [value]="null" disabled selected>Pilih Pelanggan</option>
+                                @for(c of customers(); track c.id) { <option [value]="c.id">{{c.name}}</option> }
+                            </select>
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                             <label for="salesman" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sales</label>
+                            <select id="salesman" (change)="onFormValueChange(newSaleSalesmanId, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                                <option [value]="null" disabled selected>Pilih Sales</option>
+                                @for(s of salesmen(); track s.id) { <option [value]="s.id">{{s.name}}</option> }
+                            </select>
+                        </div>
+                         <div class="col-span-1 sm:col-span-2">
+                            <label for="metode" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Metode Pembayaran</label>
+                            <select id="metode" (change)="onFormValueChangeString(newSaleMetodeId, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                                <option [value]="null" disabled selected>Pilih Metode</option>
+                                @for(m of paymentMethods(); track m.id) { <option [value]="m.id">{{m.name}}</option> }
+                            </select>
+                        </div>
+
+                        <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Detail Harga</h4></div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="harga_dasar" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Dasar</label>
+                            <input type="text" id="harga_dasar" [value]="newSaleHargaDasar() | currency:'IDR':'':'1.0-0'" readonly class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 dark:text-gray-300 sm:text-sm">
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="promo_diskon" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Promo/Diskon (Rp)</label>
+                            <input type="number" id="promo_diskon" [value]="newSalePromoDiskon()" (input)="onFormValueChange(newSalePromoDiskon, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label for="harga_netto" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Netto</label>
+                            <input type="text" id="harga_netto" [value]="newSaleHargaNetto() | currency:'IDR':'Rp ':'1.0-0'" readonly class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 font-bold dark:text-gray-200 sm:text-sm">
+                        </div>
+                        
+                        <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Biaya Tambahan</h4></div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="biaya_ppjb" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya PPJB</label>
+                            <input type="number" id="biaya_ppjb" [value]="newSaleBiayaPPJB()" (input)="onFormValueChange(newSaleBiayaPPJB, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="biaya_shm" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya SHM</label>
+                            <input type="number" id="biaya_shm" [value]="newSaleBiayaSHM()" (input)="onFormValueChange(newSaleBiayaSHM, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                        </div>
+                         <div class="sm:col-span-4">
+                            <label for="biaya_lain" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya Lain</label>
+                            <input type="number" id="biaya_lain" [value]="newSaleBiayaLain()" (input)="onFormValueChange(newSaleBiayaLain, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label for="grand_total" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Grand Total</label>
+                            <input type="text" id="grand_total" [value]="newSaleGrandTotal() | currency:'IDR':'Rp ':'1.0-0'" readonly class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 font-bold dark:text-gray-200 sm:text-sm">
+                        </div>
+
+                         <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Skema Pembayaran</h4></div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="uang_muka_persen" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang Muka (%)</label>
+                            <input type="number" id="uang_muka_persen" [value]="newSaleUangMukaPersen()" (input)="onFormValueChange(newSaleUangMukaPersen, $event)" 
+                                   [disabled]="newSaleMetodeId() === 'MP02'"
+                                   class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm"
+                                   [class.bg-gray-100]="newSaleMetodeId() === 'MP02'"
+                                   [class.dark:bg-gray-700/50]="newSaleMetodeId() === 'MP02'">
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="uang_muka_rp" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang Muka (Rp)</label>
+                            <input type="text" id="uang_muka_rp" [value]="newSaleUangMukaRp() | currency:'IDR':'':'1.0-0'" readonly class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 dark:text-gray-300 sm:text-sm">
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="tenor" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tenor (bulan)</label>
+                            <input type="number" id="tenor" [value]="newSaleTenor()" (input)="onFormValueChange(newSaleTenor, $event)" 
+                                   [disabled]="newSaleMetodeId() === 'MP02'"
+                                   class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                   [class.bg-gray-100]="newSaleMetodeId() === 'MP02'"
+                                   [class.dark:bg-gray-700/50]="newSaleMetodeId() === 'MP02'">
+                        </div>
+                        <div class="col-span-1 sm:col-span-2">
+                            <label for="jatuh_tempo_hari" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tgl Jatuh Tempo</label>
+                            <input type="number" id="jatuh_tempo_hari" [value]="newSaleJatuhTempoHari()" (input)="onFormValueChange(newSaleJatuhTempoHari, $event)" min="1" max="28" 
+                                   [disabled]="newSaleTenor() === 0"
+                                   class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                   [class.bg-gray-100]="newSaleTenor() === 0"
+                                   [class.dark:bg-gray-700/50]="newSaleTenor() === 0">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <label for="estimasi_angsuran" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estimasi Angsuran / Bulan</label>
+                            <input type="text" id="estimasi_angsuran" [value]="newSaleEstimasiAngsuran() | currency:'IDR':'Rp ':'1.0-0'" readonly class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 font-bold text-gray-800 dark:text-gray-200 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Lain-lain</h4></div>
+                        <div class="sm:col-span-4">
+                            <label for="catatan" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Catatan Penjualan</label>
+                            <textarea id="catatan" rows="3" [value]="newSaleCatatan()" (input)="onFormValueChangeString(newSaleCatatan, $event)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                    <button type="button" (click)="onSaveSale()" class="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 sm:ml-3 sm:w-auto">Simpan</button>
+                    <button type="button" (click)="closeAddModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-600 dark:text-gray-200 px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto">Batal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

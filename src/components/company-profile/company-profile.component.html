@@ -1,0 +1,100 @@
+<div class="p-10 max-w-5xl mx-auto relative">
+  <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-8">Profil Perusahaan</h1>
+  
+  @if (profile(); as p) {
+    <form (submit)="onSave($event)" class="bg-white dark:bg-gray-800 p-10 rounded-xl shadow-lg space-y-8">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <!-- Basic Info -->
+        <div class="md:col-span-2">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 border-b dark:border-gray-700 pb-3">Informasi Dasar</h2>
+        </div>
+        <div>
+          <label for="name" class="block text-base font-medium text-gray-700 dark:text-gray-300">Nama Perusahaan</label>
+          <input type="text" id="name" [value]="p.nama" (input)="handleFormChange('nama', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+        <div>
+          <label for="npwp" class="block text-base font-medium text-gray-700 dark:text-gray-300">NPWP</label>
+          <input type="text" id="npwp" [value]="p.npwp" (input)="handleFormChange('npwp', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+        <div>
+          <label for="email" class="block text-base font-medium text-gray-700 dark:text-gray-300">Email</label>
+          <input type="email" id="email" [value]="p.email" (input)="handleFormChange('email', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+        <div>
+          <label for="phone" class="block text-base font-medium text-gray-700 dark:text-gray-300">Telepon</label>
+          <input type="tel" id="phone" [value]="p.telepon" (input)="handleFormChange('telepon', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+        <div class="md:col-span-2">
+          <label for="address" class="block text-base font-medium text-gray-700 dark:text-gray-300">Alamat</label>
+          <textarea id="address" rows="3" (input)="handleFormChange('alamat', $event)"
+                    class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">{{ p.alamat }}</textarea>
+        </div>
+
+        <!-- Print Settings -->
+        <div class="md:col-span-2 pt-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 border-b dark:border-gray-700 pb-3">Pengaturan Cetakan</h2>
+        </div>
+         <div class="md:col-span-2">
+            <label for="logo_url" class="block text-base font-medium text-gray-700 dark:text-gray-300">URL Logo</label>
+            <input type="text" id="logo_url" [value]="p.logo_url" (input)="handleFormChange('logo_url', $event)"
+                   class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+             @if(p.logo_url) {
+                <div class="mt-2 p-2 border dark:border-gray-700 rounded-md inline-block bg-gray-50 dark:bg-gray-700">
+                    <img [src]="p.logo_url" alt="Logo preview" class="h-16"/>
+                </div>
+             }
+         </div>
+         <div>
+          <label for="ttd_admin_nama" class="block text-base font-medium text-gray-700 dark:text-gray-300">Nama Tanda Tangan Admin</label>
+          <input type="text" id="ttd_admin_nama" [value]="p.ttd_admin_nama" (input)="handleFormChange('ttd_admin_nama', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+        <div class="md:col-span-2">
+          <label for="footer_cetak" class="block text-base font-medium text-gray-700 dark:text-gray-300">Catatan Kaki Cetakan</label>
+          <input type="text" id="footer_cetak" [value]="p.footer_cetak" (input)="handleFormChange('footer_cetak', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+
+        <!-- Numbering Format -->
+        <div class="md:col-span-2 pt-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 border-b dark:border-gray-700 pb-3">Format Penomoran</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Gunakan: {{'{'}}YYYY{{'}'}} = Tahun, {{'{'}}MM{{'}'}} = Bulan, {{'{'}}DD{{'}'}} = Hari, {{'{'}}####{{'}'}} = Nomor urut (4 digit).</p>
+        </div>
+        <div>
+          <label for="format_faktur" class="block text-base font-medium text-gray-700 dark:text-gray-300">Format Faktur</label>
+          <input type="text" id="format_faktur" [value]="p.nomor_format.faktur" (input)="handleNestedFormChange('nomor_format', 'faktur', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+        <div>
+          <label for="format_kuitansi" class="block text-base font-medium text-gray-700 dark:text-gray-300">Format Kuitansi</label>
+          <input type="text" id="format_kuitansi" [value]="p.nomor_format.kuitansi" (input)="handleNestedFormChange('nomor_format', 'kuitansi', $event)"
+                 class="mt-1 block w-full px-4 py-2 bg-white dark:bg-gray-700 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-base">
+        </div>
+
+      </div>
+
+      <div class="mt-10 flex justify-end">
+        <button type="submit" class="inline-flex items-center justify-center rounded-md bg-primary-900 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+          Simpan Perubahan
+        </button>
+      </div>
+    </form>
+  } @else {
+    <p class="text-center text-gray-500 dark:text-gray-400">Memuat profil perusahaan...</p>
+  }
+
+  <!-- Success Message -->
+  @if(showSuccessMessage()) {
+    <div class="fixed top-5 right-5 bg-green-100 dark:bg-green-900/50 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-3 rounded-md shadow-lg flex items-center animate-fade-in-out" role="alert">
+      <svg class="w-6 h-6 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+      </svg>
+      <span class="block sm:inline">Profil perusahaan berhasil diperbarui.</span>
+    </div>
+  }
+</div>

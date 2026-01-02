@@ -1,0 +1,2 @@
+<?php
+namespace App\Models;use Illuminate\Database\Eloquent\Factories\HasFactory;use Illuminate\Database\Eloquent\Model;class CompanyProfile extends Model{use HasFactory;protected $fillable=['name','npwp','email','phone','address','signer_name','footer_note','invoice_format','receipt_format','logo_path',];}

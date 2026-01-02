@@ -1,0 +1,214 @@
+@if (!licenseService.isLicenseValid() && !licenseService.isLoading()) {
+<app-license-gate />
+} @else if (licenseService.isLoading() && !licenseService.isActivated()) {
+<!-- Initial License Loading -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900">
+  <div class="flex flex-col items-center gap-4">
+    <div class="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+    <p class="text-gray-400">Memeriksa lisensi...</p>
+  </div>
+</div>
+} @else if (showDisclaimer()) {
+<!-- Disclaimer Modal -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80 p-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center transform transition-all"
+    style="animation: enter 0.3s ease-out forwards;">
+    <div
+      class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 dark:bg-yellow-900/50 sm:mx-auto sm:h-10 sm:w-10">
+      <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+        stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.007H12v-.007z" />
+      </svg>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-4 mb-4">Peringatan Penting</h2>
+    <div class="text-left space-y-3 text-gray-600 dark:text-gray-300">
+      <p>
+        <strong>Data Tidak Disimpan Otomatis di Server.</strong> Semua data aplikasi ini disimpan secara lokal di
+        browser Anda untuk menjaga privasi.
+      </p>
+      <p>
+        <strong>Backup Mandiri Diperlukan.</strong> Harap lakukan backup data secara mandiri setiap selesai melakukan
+        perubahan penting. Gunakan fitur <strong>"Export JSON"</strong> pada menu "Manajemen Data".
+      </p>
+      <p>
+        <strong>Restore Data.</strong> Jika data hilang atau saat Anda berpindah perangkat, Anda dapat memulihkan data
+        dari file backup menggunakan fitur <strong>"Import JSON"</strong>.
+      </p>
+    </div>
+    <div class="mt-8">
+      <button (click)="dismissDisclaimer()"
+        class="w-full inline-flex items-center justify-center rounded-lg bg-primary-900 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-transform hover:scale-105">
+        Saya Mengerti
+      </button>
+    </div>
+  </div>
+  <style>
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
+</div>
+} @else if (needsInitialSetup()) {
+<!-- Welcome Popup -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center transform transition-all"
+    style="animation: enter 0.3s ease-out forwards;">
+    <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">Selamat Datang di SIMAK!</h2>
+
+    <div
+      class="mt-6 mb-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-500 text-yellow-800 dark:text-yellow-200 rounded-r-lg text-left">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg class="h-5 w-5 text-yellow-400 dark:text-yellow-500" xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd"
+              d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-bold">PERINGATAN PENTING: Lakukan Backup Data Anda!</h3>
+          <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
+            <p>Untuk privasi Anda, semua data aplikasi ini disimpan dengan aman di penyimpanan lokal browser Anda.
+              <strong>Tidak ada data yang dikirim ke server eksternal.</strong></p>
+            <p class="mt-1">
+              Ini berarti Anda <strong>bertanggung jawab penuh</strong> untuk melakukan backup. Gunakan fitur
+              <strong>"Export JSON"</strong> sebelum menutup aplikasi untuk mencegah kehilangan data.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-gray-600 dark:text-gray-300 mb-8">
+      Bagaimana Anda ingin memulai?
+    </p>
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <button (click)="dataService.loadDemoData()"
+        class="flex-1 inline-flex items-center justify-center rounded-lg bg-primary-900 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          class="w-6 h-6 mr-3">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A11.953 11.953 0 0 1 12 13.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253M12 21a9.004 9.004 0 0 0 8.716-6.747" />
+        </svg>
+        Muat Data Contoh
+      </button>
+      <button (click)="dataService.resetAllData()"
+        class="flex-1 inline-flex items-center justify-center rounded-lg bg-white dark:bg-gray-700 px-6 py-3 text-lg font-semibold text-gray-800 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-transform hover:scale-105">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+          class="w-6 h-6 mr-3">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Mulai dari Kosongan
+      </button>
+    </div>
+  </div>
+  <style>
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  </style>
+</div>
+} @else {
+<div class="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+  <!-- Off-canvas menu for mobile -->
+  <div class="fixed inset-0 flex z-40 lg:hidden" role="dialog" aria-modal="true"
+    [class.pointer-events-none]="!isSidebarOpen()">
+
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity ease-in-out duration-300 dark:bg-black/70"
+      [class.opacity-100]="isSidebarOpen()" [class.opacity-0]="!isSidebarOpen()" 
+      [class.pointer-events-auto]="isSidebarOpen()" [class.pointer-events-none]="!isSidebarOpen()"
+      (click)="closeSidebar()"
+      aria-hidden="true"></div>
+
+    <!-- Sidebar -->
+    <div
+      class="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-gray-800 transition-transform ease-in-out duration-300"
+      [class.translate-x-0]="isSidebarOpen()" [class.-translate-x-full]="!isSidebarOpen()">
+      <app-sidebar [activeView]="activeView()" (viewChange)="onViewChange($event)" [isOffCanvas]="true"
+        (close)="closeSidebar()" />
+    </div>
+  </div>
+
+  <!-- Static sidebar for desktop -->
+  <div class="hidden lg:flex lg:flex-shrink-0">
+    <app-sidebar [activeView]="activeView()" (viewChange)="onViewChange($event)" />
+  </div>
+
+  <!-- Main content -->
+  <div class="flex flex-col w-0 flex-1 overflow-hidden">
+    <div
+      class="relative z-10 flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-md dark:border-gray-700 dark:bg-gray-800 lg:hidden">
+      <!-- Left: Hamburger Button -->
+      <button (click)="toggleSidebar()" type="button" class="flex-shrink-0 text-gray-500 dark:text-gray-300">
+        <span class="sr-only">Open sidebar</span>
+        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+
+      <!-- Center: Dynamic Date & Time -->
+      <div class="px-2 text-center text-sm font-medium text-gray-700 dark:text-gray-200">
+        {{ currentDateTime() }}
+      </div>
+
+      <!-- Right: Icons -->
+      <div class="flex flex-shrink-0 items-center space-x-2">
+        <!-- Dark mode toggle -->
+        <button (click)="toggleTheme()"
+          class="rounded-full p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          [attr.aria-label]="isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'">
+          @if (isDarkMode()) {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+          </svg>
+          } @else {
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+            stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+          </svg>
+          }
+        </button>
+      </div>
+    </div>
+    <main #mainContent class="flex-1 relative overflow-y-auto focus:outline-none">
+      @switch (activeView()) {
+      @case ('dashboard') { <app-dashboard /> }
+      @case ('sales') { <app-sales /> }
+      @case ('projects') { <app-projects /> }
+      @case ('lots') { <app-lots /> }
+      @case ('customers') { <app-customers /> }
+      @case ('salesmen') { <app-salesmen /> }
+      @case ('company-profile') { <app-company-profile /> }
+      @case ('data-management') { <app-data-management /> }
+      }
+    </main>
+    <footer
+      class="flex-shrink-0 text-center py-4 px-6 text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700/50">
+      <p>SIMAK&trade; &copy; {{ currentYear }}. All rights reserved.</p>
+    </footer>
+  </div>
+</div>
+}

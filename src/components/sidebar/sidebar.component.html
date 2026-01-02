@@ -1,0 +1,93 @@
+<div class="flex h-full flex-col justify-between border-e bg-white dark:bg-gray-800 dark:border-gray-700 w-72">
+  <div class="px-4 py-6">
+    <div class="relative flex items-center text-primary-900 dark:text-primary-100">
+        @if (isOffCanvas()) {
+          <div class="absolute top-0 right-0">
+            <button type="button" (click)="close.emit()" class="-m-2.5 p-2.5 text-gray-700 dark:text-gray-300">
+              <span class="sr-only">Close menu</span>
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        }
+        @if(isDarkMode()) {
+          <img src="https://res.cloudinary.com/dtydebfv3/image/upload/v1763047742/sima_putih_yvpgmt.png" alt="Kavling Pro Logo" class="w-full h-auto">
+        } @else {
+          <img src="https://res.cloudinary.com/dtydebfv3/image/upload/v1763047742/sima_merah_ikyvk5.png" alt="Kavling Pro Logo" class="w-full h-auto">
+        }
+    </div>
+    <p class="mt-2 text-xs text-center text-gray-500 dark:text-gray-400">
+        Sistem Informasi Manajemen Kavling
+    </p>
+
+    @if(user(); as u) {
+        <ul class="mt-6 space-y-2">
+            @for (item of menuItems; track item.view) {
+                @if (item.roles.includes(u.role || '')) {
+                    <li>
+                        <a href="javascript:void(0)" 
+                           (click)="changeView(item.view)" 
+                           class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-colors"
+                           [class]="activeView() === item.view ? 'bg-primary-900 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-white'">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" />
+                            </svg>
+                            {{ item.label }}
+                        </a>
+                    </li>
+                }
+            }
+        </ul>
+        <div class="mt-6">
+          <button (click)="logout()" class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6A2.25 2.25 0 0 0 5.25 5.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+            </svg>
+            Keluar
+          </button>
+        </div>
+    }
+  </div>
+
+  @if (user(); as u) {
+    <div>
+      <div class="sticky inset-x-0 bottom-0 border-t border-gray-100 dark:border-gray-700">
+          <div class="flex items-start gap-4 bg-white dark:bg-gray-800 p-4">
+              <img
+                  alt="Company Logo"
+                  [src]="profileImageUrl()"
+                  class="h-12 w-12 rounded-full object-cover bg-white"
+              />
+              <div class="flex-1 min-w-0">
+                  <div>
+                      <p class="text-sm">
+                          <strong class="block font-medium text-gray-800 dark:text-gray-200 truncate">{{ companyProfile()?.nama || user()?.name }}</strong>
+                          <span class="text-gray-500 dark:text-gray-400 truncate block"> {{ user()?.email }} </span>
+                      </p>
+                  </div>
+                  <div class="mt-1 hidden lg:flex justify-end items-center">
+                      <button (click)="toggleTheme()" 
+                              class="text-gray-500 dark:text-gray-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors p-1 rounded-full"
+                              [attr.aria-label]="isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'">
+                        @if (isDarkMode()) {
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>
+                        } @else {
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>
+                        }
+                      </button>
+                  </div>
+                  <div class="mt-3">
+                      <button (click)="logout()" class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6A2.25 2.25 0 0 0 5.25 5.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                        </svg>
+                        Keluar
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </div>
+  }
+</div>

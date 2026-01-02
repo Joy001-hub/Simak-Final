@@ -1,0 +1,29 @@
+# Dependencies
+/node_modules/
+/vendor/
+
+# Build outputs
+/dist/
+/build/
+/tmp-asar/
+/public/build/
+/public/hot
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime/cache
+/storage/framework/
+/storage/logs/
+/storage/debugbar/
+/bootstrap/cache/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

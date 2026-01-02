@@ -1,0 +1,45 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "name": "kavling-management-pro",
+    "version": "1.0.0",
+    "description": "Kavling Management Pro - Web Application",
+    "author": "",
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "build:web": "vite build",
+        "dev": "vite",
+        "electron:dev": "cross-env NODE_ENV=development DEV_SERVER_URL=http://localhost:5173 electron .",
+        "electron:start": "cross-env NODE_ENV=production electron ."
+    },
+    "dependencies": {
+        "@angular/common": "^17.3.8",
+        "@angular/compiler": "^17.3.8",
+        "@angular/core": "^17.3.8",
+        "@angular/platform-browser": "^17.3.8",
+        "@angular/platform-browser-dynamic": "^17.3.8",
+        "axios": "^1.11.0",
+        "d3": "^7.9.0",
+        "rxjs": "^7.8.1",
+        "zone.js": "^0.14.10"
+    },
+    "devDependencies": {
+        "@analogjs/vite-plugin-angular": "^2.1.1",
+        "@angular-devkit/build-angular": "^17.3.8",
+        "@angular/compiler-cli": "^17.3.8",
+        "@rollup/plugin-terser": "^0.4.4",
+        "@types/d3": "^7.4.3",
+        "@types/node": "^22.7.4",
+        "autoprefixer": "^10.4.16",
+        "cross-env": "^7.0.3",
+        "electron": "^31.3.0",
+        "javascript-obfuscator": "^5.0.1",
+        "postcss": "^8.4.31",
+        "tailwindcss": "^3.4.0",
+        "terser-webpack-plugin": "^5.3.15",
+        "typescript": "^5.3.3",
+        "vite": "^7.0.7"
+    },
+    "build": {}
+}

@@ -1,0 +1,358 @@
+@if (saleDetails(); as details) {
+    <div>
+        <div class="flex flex-col sm:flex-row sm:items-center mb-6 gap-4">
+            <button (click)="closeDetail()" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-4 self-start sm:self-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600 dark:text-gray-400">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+            </button>
+            <div class="flex-grow">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">Detail Penjualan</h1>
+                <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400">Invoice: {{ details.invoice_no }}</p>
+            </div>
+            <div class="flex gap-2 items-center self-start sm:self-center flex-wrap">
+                @if (details.status_penjualan === 'paid_off') {
+                    <span class="inline-flex items-center gap-x-1.5 rounded-full bg-green-100 dark:bg-green-900/50 px-3 py-1.5 text-sm sm:text-md font-bold text-green-700 dark:text-green-300">
+                        <svg class="h-5 w-5 text-green-500 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        LUNAS
+                    </span>
+                }
+                @if(whatsAppLink()) {
+                    <a [href]="whatsAppLink()" target="_blank" class="inline-flex items-center justify-center rounded-md bg-green-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-600">
+                        <svg fill="currentColor" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2">
+                            <path d="M26.576 5.363c-2.69-2.69-6.406-4.354-10.511-4.354-8.209 0-14.865 6.655-14.865 14.865 0 2.732 0.737 5.291 2.022 7.491l-0.038-0.070-2.109 7.702 7.879-2.067c2.051 1.139 4.498 1.809 7.102 1.809h0.006c8.209-0.003 14.862-6.659 14.862-14.868 0-4.103-1.662-7.817-4.349-10.507l0 0zM16.062 28.228h-0.005c-0 0-0.001 0-0.001 0-2.319 0-4.489-0.64-6.342-1.753l0.056 0.031-0.451-0.267-4.675 1.227 1.247-4.559-0.294-0.467c-1.185-1.862-1.889-4.131-1.889-6.565 0-6.822 5.531-12.353 12.353-12.353s12.353 5.531 12.353 12.353c0 6.822-5.53 12.353-12.353 12.353h-0zM22.838 18.977c-0.371-0.186-2.197-1.083-2.537-1.208-0.341-0.124-0.589-0.185-0.837 0.187-0.246 0.371-0.958 1.207-1.175 1.455-0.216 0.249-0.434 0.279-0.805 0.094-1.15-0.466-2.138-1.087-2.997-1.852l0.010 0.009c-0.799-0.74-1.484-1.587-2.037-2.521l-0.028-0.052c-0.216-0.371-0.023-0.572 0.162-0.757 0.167-0.166 0.372-0.434 0.557-0.65 0.146-0.179 0.271-0.384 0.366-0.604l0.006-0.017c0.043-0.087 0.068-0.188 0.068-0.296 0-0.131-0.037-0.253-0.101-0.357l0.002 0.003c-0.094-0.186-0.836-2.014-1.145-2.758-0.302-0.724-0.609-0.625-0.836-0.637-0.216-0.010-0.464-0.012-0.712-0.012-0.395 0.010-0.746 0.188-0.988 0.463l-0.001 0.002c-0.802 0.761-1.3 1.834-1.3 3.023 0 0.026 0 0.053 0.001 0.079l-0-0.004c0.131 1.467 0.681 2.784 1.527 3.857l-0.012-0.015c1.604 2.379 3.742 4.282 6.251 5.564l0.094 0.043c0.548 0.248 1.25 0.513 1.968 0.74l0.149 0.041c0.442 0.14 0.951 0.221 1.479 0.221 0.303 0 0.601-0.027 0.889-0.078l-0.031 0.004c1.069-0.223 1.956-0.868 2.604-1.844 0.649-0.976 0.963-2.149 0.963-3.322 0-0.322-0.038-0.635-0.107-0.938l-0.010-0.041c-0.186-0.248-0.435-0.434-0.712-0.558z"></path>
+                        </svg>
+                        Kirim Tagihan
+                    </a>
+                }
+                @if (details.status_penjualan !== 'cancelled' && details.status_penjualan !== 'paid_off') {
+                    <button (click)="openEditModal()" class="inline-flex items-center justify-center rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-yellow-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                        </svg>
+                        Edit Transaksi
+                    </button>
+                    <button (click)="promptCancelSale()" class="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2 -ml-1">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        Batalkan Penjualan
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column -->
+            <div class="space-y-8">
+                <!-- Transaction Info -->
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Informasi Transaksi</h2>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 p-6 text-base space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Tgl. Booking</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-200">{{ details.invoice_date | date:'dd MMM yyyy' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Pembeli</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-200">{{ details.customer?.name }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Kavling</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-200">{{ details.project?.name }} / {{ details.lot?.block }}-{{ details.lot?.lot_number }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Metode Bayar</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-200">{{ details.payment_method?.name }}</span>
+                        </div>
+                         @if(details.catatan) {
+                            <div class="pt-2">
+                                <span class="text-gray-500 dark:text-gray-400">Catatan</span>
+                                <p class="font-medium text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md mt-1">{{ details.catatan }}</p>
+                            </div>
+                         }
+                    </div>
+                </div>
+                 <!-- Financial Summary -->
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Ringkasan Finansial</h2>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 p-6 text-base space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Harga Jual</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-200">{{ details.grand_total | currency:'IDR':'symbol':'1.0-0' }}</span>
+                        </div>
+                         <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">Total Terbayar</span>
+                            <span class="font-medium text-green-600 dark:text-green-400">{{ totalPaid() | currency:'IDR':'symbol':'1.0-0' }}</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold">
+                            <span class="text-gray-600 dark:text-gray-300">Sisa Piutang</span>
+                            <span class="text-red-600 dark:text-red-400">{{ totalReceivable() | currency:'IDR':'symbol':'1.0-0' }}</span>
+                        </div>
+                         @if(details.dp_sisa > 0) {
+                             <div class="p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg text-center">
+                                <p class="text-yellow-800 dark:text-yellow-300">Sisa DP belum lunas: <strong class="font-bold">{{details.dp_sisa | currency:'IDR':'symbol':'1.0-0'}}</strong></p>
+                                <button (click)="openDPPaymentModal()" class="mt-2 text-sm bg-yellow-500 text-white rounded-md py-1.5 px-3 hover:bg-yellow-600">
+                                    Bayar Sisa DP
+                                </button>
+                             </div>
+                         }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-8">
+                <!-- Installment Schedule -->
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Jadwal Angsuran</h2>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">#</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Jatuh Tempo</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Jumlah</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @for (inst of installments(); track inst.id) {
+                                        <tr [class]="inst.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20' : ''">
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ inst.installment_number }}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ inst.due_date | date:'dd MMM yyyy' }}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ inst.amount | currency:'IDR':'':'1.0-0' }}</td>
+                                            <td class="px-4 py-3 text-sm">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [class]="getStatusClass(inst.status)">
+                                                    {{ inst.status }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-3 text-right text-sm">
+                                                @if(inst.status !== 'paid' && inst.status !== 'cancelled') {
+                                                    <button (click)="openPaymentModal(inst)" class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300">Bayar Lunas</button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    } @empty {
+                                        <tr><td colspan="5" class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Tidak ada jadwal angsuran.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                         @if(details.status_penjualan === 'active') {
+                            <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                                <form (submit)="onSaveFlexiblePayment($event)" class="space-y-3">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pembayaran Fleksibel</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" name="flexAmount" placeholder="Jumlah Pembayaran" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm" [value]="flexiblePaymentAmount()" (input)="flexiblePaymentAmount.set(+$event.target.value)">
+                                        <input type="date" name="flexDate" class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm" [value]="flexiblePaymentDate()" (input)="flexiblePaymentDate.set($event.target.value)">
+                                    </div>
+                                    <button type="submit" class="w-full text-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                                        Simpan Pembayaran
+                                    </button>
+                                </form>
+                            </div>
+                         }
+                    </div>
+                </div>
+                 <!-- Payment History -->
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Riwayat Pembayaran</h2>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Tanggal</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Keterangan</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Jumlah</th>
+                                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-400"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @for(p of payments(); track p.id) {
+                                        <tr>
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ p.payment_date | date:'dd MMM yyyy' }}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ p.payment_for }}</td>
+                                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ p.amount | currency:'IDR':'':'1.0-0' }}</td>
+                                            <td class="px-4 py-3 text-right">
+                                                <button (click)="printReceipt(p)" class="text-sm text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300">Cetak</button>
+                                            </td>
+                                        </tr>
+                                    } @empty {
+                                        <tr><td colspan="4" class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada pembayaran.</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Payment Modal -->
+    @if (paymentModalInstallment(); as installment) {
+        <div class="fixed inset-0 z-20 overflow-y-auto bg-gray-500 bg-opacity-75">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl w-full max-w-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Konfirmasi Pembayaran</h3>
+                        <div class="mt-4 space-y-2 text-gray-600 dark:text-gray-300">
+                            <p>Anda akan melunasi <strong>Angsuran ke-{{ installment.installment_number }}</strong>.</p>
+                            <p>Jumlah: <strong class="text-gray-800 dark:text-gray-100">{{ (installment.amount - installment.paid_amount) | currency:'IDR':'symbol':'1.0-0' }}</strong></p>
+                            <p>Jatuh Tempo: {{ installment.due_date | date:'dd MMMM yyyy' }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button (click)="submitPayment()" class="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white sm:ml-3 sm:w-auto">Konfirmasi Bayar</button>
+                        <button (click)="closePaymentModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-600 dark:text-gray-200 px-3 py-2 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 dark:ring-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- DP Payment Modal -->
+    @if (showDPPaymentModal()) {
+       <div class="fixed inset-0 z-20 overflow-y-auto bg-gray-500 bg-opacity-75">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl w-full max-w-sm">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Pembayaran Sisa DP</h3>
+                        <div class="mt-4">
+                             <label for="dp-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Jumlah Pembayaran</label>
+                             <input type="number" id="dp-amount" [value]="dpPaymentAmount()" (input)="dpPaymentAmount.set(+$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button (click)="submitDPPayment()" class="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white sm:ml-3 sm:w-auto">Simpan Pembayaran</button>
+                        <button (click)="closeDPPaymentModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-600 dark:text-gray-200 px-3 py-2 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 dark:ring-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto">Batal</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Cancel Confirmation Modal -->
+    @if (showCancelConfirmModal()) {
+       <div class="fixed inset-0 z-20 overflow-y-auto bg-gray-500 bg-opacity-75">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl w-full max-w-lg">
+                    <div class="p-6 sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.007H12v-.007z" /></svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Batalkan Penjualan</h3>
+                            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Apakah Anda yakin? Status kavling akan kembali menjadi 'tersedia' dan semua jadwal angsuran akan dibatalkan. Tindakan ini tidak dapat diurungkan.</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button (click)="confirmCancelSale()" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white sm:ml-3 sm:w-auto">Ya, Batalkan</button>
+                        <button (click)="closeCancelModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-600 dark:text-gray-200 px-3 py-2 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 dark:ring-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto">Tidak</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if(paymentToPrint()) {
+      <app-print-receipt [paymentDetails]="paymentToPrint()" (close)="paymentToPrint.set(null)" />
+    }
+    
+    <!-- Edit Transaction Modal -->
+    @if (showEditModal() && editableSale(); as saleToEdit) {
+      <div class="fixed inset-0 z-30 overflow-y-auto bg-gray-500 bg-opacity-75">
+        <div class="flex min-h-full items-center justify-center p-4">
+          <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+            <div class="bg-white dark:bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+              <h3 class="text-xl font-semibold leading-6 text-gray-900 dark:text-gray-100">Edit Transaksi</h3>
+              <div class="mt-5 grid grid-cols-1 gap-y-4 sm:grid-cols-4 sm:gap-x-4">
+                  
+                <div class="sm:col-span-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Data Utama</h4></div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pembeli</label>
+                    <select [value]="saleToEdit.customer_id" (change)="handleSaleFormChange('customer_id', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                        @for(c of customers(); track c.id) { <option [value]="c.id">{{c.name}}</option> }
+                    </select>
+                </div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tim Marketing</label>
+                    <select [value]="saleToEdit.sales_id" (change)="handleSaleFormChange('sales_id', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                        @for(s of salesmen(); track s.id) { <option [value]="s.id">{{s.name}}</option> }
+                    </select>
+                </div>
+                <div class="col-span-1 sm:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Metode Pembayaran</label>
+                  <select [value]="saleToEdit.metode_id" (change)="handleSaleFormChange('metode_id', $event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                      @for(m of paymentMethods(); track m.id) { <option [value]="m.id">{{m.name}}</option> }
+                  </select>
+                </div>
+                
+                <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Detail Finansial</h4></div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harga Netto (Rp)</label>
+                    <input type="number" [value]="saleToEdit.harga_netto" (input)="handleSaleFormChange('harga_netto', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Promo/Diskon (Rp)</label>
+                    <input type="number" [value]="saleToEdit.promo_diskon" (input)="handleSaleFormChange('promo_diskon', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                 <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang Muka (%)</label>
+                    <input type="number" [value]="saleToEdit.uang_muka_persen" (input)="handleSaleFormChange('uang_muka_persen', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                 <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang Muka (Rp)</label>
+                    <input type="text" [value]="saleToEdit.uang_muka_rp | currency:'IDR':'':'1.0-0'" readonly class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm bg-gray-100 dark:bg-gray-700/50 dark:text-gray-300 sm:text-sm">
+                </div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya PPJB (Rp)</label>
+                    <input type="number" [value]="saleToEdit.biaya_ppjb" (input)="handleSaleFormChange('biaya_ppjb', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Biaya SHM (Rp)</label>
+                    <input type="number" [value]="saleToEdit.biaya_shm" (input)="handleSaleFormChange('biaya_shm', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                
+                 <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Skema Angsuran</h4></div>
+                <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tenor (Bulan)</label>
+                    <input type="number" [value]="saleToEdit.tenor" (input)="handleSaleFormChange('tenor', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                 <div class="col-span-1 sm:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tanggal Jatuh Tempo</label>
+                    <input type="number" [value]="saleToEdit.jatuh_tempo_hari" (input)="handleSaleFormChange('jatuh_tempo_hari', +$event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm">
+                </div>
+                
+                <div class="sm:col-span-4 mt-4"><h4 class="text-md font-medium text-primary-700 dark:text-primary-400 border-b dark:border-gray-600 pb-1">Catatan</h4></div>
+                <div class="sm:col-span-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Catatan Transaksi</label>
+                    <textarea rows="3" [value]="saleToEdit.catatan" (input)="handleSaleFormChange('catatan', $event.target.value)" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 shadow-sm sm:text-sm"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+              <button (click)="saveSale()" class="inline-flex w-full justify-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 sm:ml-3 sm:w-auto">Simpan Perubahan</button>
+              <button (click)="closeEditModal()" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-600 dark:text-gray-200 px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+}

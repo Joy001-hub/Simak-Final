@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "useDefineForClassFields": false,
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "sourceMap": false,
+    "inlineSources": false,
+    "inlineSourceMap": false,
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "types": ["node"]
+  },
+  "files": [],
+  "include": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  "angularCompilerOptions": {
+    "strictTemplates": false
+  }
+}

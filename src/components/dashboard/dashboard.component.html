@@ -1,0 +1,436 @@
+<!-- Main Dashboard Content -->
+<div class="p-4 sm:p-6 lg:p-10">
+  @if (dashboardData(); as data) {
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between md:items-center mb-8 gap-4">
+      <h1 class="text-3xl lg:text-4xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+
+      <!-- Filters -->
+      <div class="flex flex-wrap items-center gap-2 bg-white dark:bg-gray-800 dark:border-gray-700 p-2 rounded-lg shadow-sm border border-gray-200">
+        <div class="flex flex-wrap items-center gap-1">
+          <button (click)="setFilter('this_week')" [class]="activeFilter() === 'this_week' ? 'bg-primary-900 text-white dark:bg-primary-700' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-medium rounded-md hover:bg-primary-800 hover:text-white dark:hover:bg-primary-600 transition-colors">Minggu Ini</button>
+          <button (click)="setFilter('this_month')" [class]="activeFilter() === 'this_month' ? 'bg-primary-900 text-white dark:bg-primary-700' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-medium rounded-md hover:bg-primary-800 hover:text-white dark:hover:bg-primary-600 transition-colors">Bulan Ini</button>
+          <button (click)="setFilter('this_year')" [class]="activeFilter() === 'this_year' ? 'bg-primary-900 text-white dark:bg-primary-700' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-medium rounded-md hover:bg-primary-800 hover:text-white dark:hover:bg-primary-600 transition-colors">Tahun Ini</button>
+          <button (click)="setFilter('last_year')" [class]="activeFilter() === 'last_year' ? 'bg-primary-900 text-white dark:bg-primary-700' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-medium rounded-md hover:bg-primary-800 hover:text-white dark:hover:bg-primary-600 transition-colors">Tahun Lalu</button>
+          <button (click)="setFilter('all_time')" [class]="activeFilter() === 'all_time' ? 'bg-primary-900 text-white dark:bg-primary-700' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-medium rounded-md hover:bg-primary-800 hover:text-white dark:hover:bg-primary-600 transition-colors">Semua</button>
+        </div>
+        @if (activeFilter() === 'custom') {
+          <div class="flex items-center gap-2 border-l pl-2 dark:border-gray-600">
+              <input type="date" (change)="updateCustomDate('start', $event)" [value]="dataService.customDateRange().start" class="px-3 py-2 text-sm md:text-base border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">
+              <span class="text-gray-500 dark:text-gray-400">-</span>
+              <input type="date" (change)="updateCustomDate('end', $event)" [value]="dataService.customDateRange().end" class="px-3 py-2 text-sm md:text-base border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300">
+          </div>
+        }
+        <button (click)="setFilter('custom')" [class]="activeFilter() === 'custom' ? 'bg-primary-900 text-white dark:bg-primary-700' : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'" class="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-medium rounded-md hover:bg-primary-800 hover:text-white dark:hover:bg-primary-600 transition-colors">Kustom</button>
+        <div class="flex items-center border-l pl-2 ml-2 dark:border-gray-600">
+            <input id="compare" type="checkbox" (change)="toggleCompare($event)" [checked]="dataService.compareEnabled()" [disabled]="activeFilter() === 'all_time'" class="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-primary-900 focus:ring-primary-800 disabled:bg-gray-200 disabled:cursor-not-allowed">
+            <label for="compare" class="ml-2 block text-sm md:text-base text-gray-900 dark:text-gray-300" [class.text-gray-400]="activeFilter() === 'all_time'" [class.dark:text-gray-500]="activeFilter() === 'all_time'">Bandingkan</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid gap-5" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <!-- Card 1: Penerimaan Periode Ini -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl flex flex-col">
+        <div class="p-6 flex-grow">
+          <dl>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Penerimaan Periode Ini</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ data.current.penerimaan.value | currency:'IDR':'symbol':'1.0-0' }}</dd>
+            @if(data.previous) {
+              @let change = getPercentageChange(data.current.penerimaan.value, data.previous?.penerimaan.value);
+            @let isIncrease = change >= 0;
+            <dd class="mt-1">
+              <span class="inline-flex items-center gap-1 text-sm font-semibold"
+                    [class.text-green-700]="isIncrease"
+                    [class.text-red-700]="!isIncrease">
+                <span aria-hidden="true">{{ isIncrease ? '↑' : '↓' }}</span>
+                <span>{{ Math.abs(change) | number:'1.1-1' }}% vs periode lalu</span>
+              </span>
+            </dd>
+            }
+          </dl>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 text-xs">
+          @if(data.previous) {
+            <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+              <span>Periode Lalu: <strong>{{ data.previous.penerimaan.value | currency:'IDR':'symbol':'1.0-0' }}</strong></span>
+              <span class="text-gray-500 dark:text-gray-500">{{ data.previous.penerimaan.count }} transaksi</span>
+            </div>
+          } @else {
+            <p class="text-gray-500 dark:text-gray-400">dari <strong>{{ data.current.penerimaan.count }}</strong> transaksi</p>
+          }
+        </div>
+      </div>
+
+      <!-- Card 2: Total DP Diterima -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl flex flex-col">
+        <div class="p-6 flex-grow">
+          <dl>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Total DP Diterima</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ data.current.totalDP.value | currency:'IDR':'symbol':'1.0-0' }}</dd>
+            @if(data.previous) {
+              @let change = getPercentageChange(data.current.totalDP.value, data.previous?.totalDP.value);
+            @let isIncrease = change >= 0;
+            <dd class="mt-1">
+              <span class="inline-flex items-center gap-1 text-sm font-semibold"
+                    [class.text-green-700]="isIncrease"
+                    [class.text-red-700]="!isIncrease">
+                <span aria-hidden="true">{{ isIncrease ? '↑' : '↓' }}</span>
+                <span>{{ Math.abs(change) | number:'1.1-1' }}% vs periode lalu</span>
+              </span>
+            </dd>
+            }
+          </dl>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 text-xs">
+          @if(data.previous) {
+            <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+              <span>Periode Lalu: <strong>{{ data.previous.totalDP.value | currency:'IDR':'symbol':'1.0-0' }}</strong></span>
+              <span class="text-gray-500 dark:text-gray-500">{{ data.previous.totalDP.count }} penjualan</span>
+            </div>
+          } @else {
+            <p class="text-gray-500 dark:text-gray-400">dari <strong>{{ data.current.totalDP.count }}</strong> penjualan baru</p>
+          }
+        </div>
+      </div>
+
+      <!-- Card 3: Total Penjualan -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl flex flex-col">
+        <div class="p-6 flex-grow">
+          <dl>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Total Penjualan</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ data.current.totalSales.count }} <span class="text-xl text-gray-500 dark:text-gray-400 font-medium">unit</span></dd>
+             @if(data.previous) {
+              @let change = getPercentageChange(data.current.totalSales.count, data.previous?.totalSales.count);
+              @let isIncrease = change >= 0;
+              <dd class="mt-1">
+                <span class="inline-flex items-center gap-1 text-sm font-semibold"
+                      [class.text-green-700]="isIncrease"
+                      [class.text-red-700]="!isIncrease">
+                  <span aria-hidden="true">{{ isIncrease ? '↑' : '↓' }}</span>
+                  <span>{{ Math.abs(change) | number:'1.1-1' }}% vs periode lalu</span>
+                </span>
+              </dd>
+            }
+          </dl>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 text-xs">
+          @if(data.previous) {
+            <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+              <span>Periode Lalu: <strong>{{ data.previous.totalSales.count }} unit</strong></span>
+              <span class="text-gray-500 dark:text-gray-500">{{ data.previous.totalSales.value | currency:'IDR':'symbol':'1.0-0' }}</span>
+            </div>
+          } @else {
+            <p class="text-gray-500 dark:text-gray-400">senilai <strong>{{ data.current.totalSales.value | currency:'IDR':'symbol':'1.0-0' }}</strong></p>
+          }
+        </div>
+      </div>
+
+      <!-- Card 4: Total Piutang (Global) -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl flex flex-col">
+        <div class="p-6 flex-grow">
+          <dl>
+              <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Total Piutang (Global)</dt>
+              <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ data.totalReceivables.value | currency:'IDR':'symbol':'1.0-0' }}</dd>
+              @if (data.receivablesBreakdown; as breakdown) {
+                  @if (data.totalReceivables.value > 0) {
+                      <dd class="mt-2">
+                          <div class="w-full flex rounded-full h-2.5 my-2 overflow-hidden" title="Indikator Kesehatan Piutang">
+                              <div class="bg-red-500 h-2.5" [style.width.%]="breakdown.overdue.percentage" [title]="'Tunggakan: ' + (breakdown.overdue.value | currency:'IDR':'':'1.0-0') + ' (' + (breakdown.overdue.percentage | number:'1.0-0') + '%). Mencakup sisa DP yang belum lunas dan angsuran yang telah jatuh tempo.'"></div>
+                              <div class="bg-yellow-400 h-2.5" [style.width.%]="breakdown.attention.percentage" [title]="'Perhatian: ' + (breakdown.attention.value | currency:'IDR':'':'1.0-0') + ' (' + (breakdown.attention.percentage | number:'1.0-0') + '%). Mencakup angsuran yang akan jatuh tempo dalam 7 hari ke depan.'"></div>
+                              <div class="bg-green-500 h-2.5" [style.width.%]="breakdown.safe.percentage" [title]="'Aman: ' + (breakdown.safe.value | currency:'IDR':'':'1.0-0') + ' (' + (breakdown.safe.percentage | number:'1.0-0') + '%). Mencakup sisa piutang angsuran yang belum jatuh tempo.'"></div>
+                          </div>
+                          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 -mt-1">
+                              <span class="flex items-center" [title]="'Tunggakan: ' + (breakdown.overdue.value | currency:'IDR':'':'1.0-0') + ' (' + (breakdown.overdue.percentage | number:'1.0-0') + '%). Mencakup sisa DP yang belum lunas dan angsuran yang telah jatuh tempo.'"><span class="w-2 h-2 rounded-full bg-red-500 mr-1.5"></span>Tunggakan</span>
+                              <span class="flex items-center" [title]="'Perhatian: ' + (breakdown.attention.value | currency:'IDR':'':'1.0-0') + ' (' + (breakdown.attention.percentage | number:'1.0-0') + '%). Mencakup angsuran yang akan jatuh tempo dalam 7 hari ke depan.'"><span class="w-2 h-2 rounded-full bg-yellow-400 mr-1.5"></span>Perhatian</span>
+                              <span class="flex items-center" [title]="'Aman: ' + (breakdown.safe.value | currency:'IDR':'':'1.0-0') + ' (' + (breakdown.safe.percentage | number:'1.0-0') + '%). Mencakup sisa piutang angsuran yang belum jatuh tempo.'"><span class="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>Aman</span>
+                          </div>
+                      </dd>
+                  }
+              }
+          </dl>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 text-xs">
+          <p class="text-gray-500 dark:text-gray-400">dari <strong>{{ data.totalReceivables.count }}</strong> penjualan aktif</p>
+        </div>
+      </div>
+
+      <!-- Card 5: Nilai Persediaan Kavling -->
+      <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl flex flex-col">
+        <div class="p-6 flex-grow">
+          <dl>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400 truncate">Nilai Persediaan Kavling</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ data.plotInventory.value | currency:'IDR':'symbol':'1.0-0' }}</dd>
+            @if (data.plotInventory.value > 0 && data.plotInventoryByProject.byValue.length > 0) {
+                @let totalInventory = data.plotInventory.value;
+                <dd class="mt-2">
+                    <div class="w-full flex rounded-full h-2.5 my-2 overflow-hidden" title="Komposisi Inventaris per Proyek">
+                        @for (project of data.plotInventoryByProject.byValue; track project.name) {
+                            @let percentage = (project.value / totalInventory) * 100;
+                            <div class="h-2.5"
+                                 [style.background-color]="getProjectColor(project.name)"
+                                 [style.width.%]="percentage"
+                                 [title]="project.name + ': ' + (project.value | currency:'IDR':'':'1.0-0') + ' (' + (percentage | number:'1.0-0') + '%)'"></div>
+                        }
+                    </div>
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400 -mt-1">
+                        @for(project of data.plotInventoryByProject.byValue; track project.name) {
+                            <span class="flex items-center">
+                                <span class="w-2 h-2 rounded-full mr-1.5" [style.background-color]="getProjectColor(project.name)"></span>{{ project.name }}
+                            </span>
+                        }
+                    </div>
+                </dd>
+            }
+          </dl>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-3 text-xs">
+          <p class="text-gray-500 dark:text-gray-400">dari <strong>{{ data.plotInventory.count }}</strong> unit tersedia</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-lg">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 dark:text-gray-100">Tren Penjualan</h2>
+             <div class="inline-flex rounded-md shadow-sm" role="group">
+              <button (click)="setSalesTrendChartMetric('value')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border rounded-l-lg transition-colors"
+                      [class]="salesTrendChartMetric() === 'value' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Nilai (Rp)
+              </button>
+              <button (click)="setSalesTrendChartMetric('unit')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border-t border-b border-r rounded-r-lg transition-colors -ml-px"
+                      [class]="salesTrendChartMetric() === 'unit' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Jumlah Unit
+              </button>
+            </div>
+          </div>
+          <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+              <div class="relative flex items-center justify-center" [title]="forecastToggleTitle()">
+                  <label for="toggle-forecast" class="flex items-center" [class.cursor-not-allowed]="isForecastDisabled()">
+                      <div class="relative">
+                          <input type="checkbox" id="toggle-forecast" class="peer sr-only" [checked]="showForecast()" (change)="toggleForecast($event)" [disabled]="isForecastDisabled()">
+                          <div class="block bg-gray-300 w-14 h-8 rounded-full peer-checked:bg-primary-800 transition peer-disabled:bg-gray-200"></div>
+                          <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform peer-checked:translate-x-full peer-disabled:bg-gray-100"></div>
+                      </div>
+                    
+                      </div>
+                  </label>
+              </div>
+              @if(showForecast() && forecastDescription()) {
+                <div class="mt-3 text-center text-sm text-gray-600 bg-blue-50 border border-blue-200 p-2 rounded-md dark:bg-blue-900/30 dark:border-blue-700/50 dark:text-blue-200">
+                    {{ forecastDescription() }}
+                </div>
+              }
+          </div>
+          <div class="w-full h-[300px] mt-4 relative">
+            @if (chartsLoading()) {
+              <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            }
+            @if(forecastLoading(); as loadingMessage) {
+              <div class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-lg z-10">
+                  <svg class="animate-spin h-8 w-8 text-primary-900 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p class="mt-3 text-gray-600 dark:text-gray-300 font-medium">{{ loadingMessage }}</p>
+              </div>
+            }
+            @if(forecastError(); as error) {
+                <div class="absolute inset-0 bg-red-50/90 dark:bg-red-900/30 flex flex-col items-center justify-center rounded-lg z-10 p-4">
+                    <p class="font-semibold text-red-700 dark:text-red-300">Gagal Membuat Proyeksi</p>
+                    <p class="mt-2 text-red-600 dark:text-red-400 text-sm text-center">{{ error }}</p>
+                </div>
+            }
+            <div #salesTrendChart class="w-full h-full flex items-center justify-center transition-opacity duration-300" [class.opacity-0]="chartsLoading()"></div>
+          </div>
+      </div>
+       <div class="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-lg">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 dark:text-gray-100">Performa Tim Marketing</h2>
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+              <button (click)="setSalesmanChartMetric('value')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border rounded-l-lg transition-colors"
+                      [class]="salesmanChartMetric() === 'value' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Nilai (Rp)
+              </button>
+              <button (click)="setSalesmanChartMetric('unit')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border-t border-b border-r rounded-r-lg transition-colors -ml-px"
+                      [class]="salesmanChartMetric() === 'unit' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Jumlah Unit
+              </button>
+            </div>
+          </div>
+          <!-- Placeholder to match AI toggle height -->
+          <div class="mt-4 p-3 rounded-lg invisible">
+              <div class="relative flex items-center justify-center">
+                  <div class="flex items-center">
+                      <div class="relative">
+                          <div class="block w-14 h-8 rounded-full"></div>
+                          <div class="absolute left-1 top-1 w-6 h-6 rounded-full"></div>
+                      </div>
+                      <div class="ml-3 font-medium">
+                          Placeholder
+                      </div>
+                  </div>
+              </div>
+          </div>
+          <div class="w-full h-[300px] mt-4 relative">
+            @if (chartsLoading()) {
+              <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            }
+            <div #salesBySalesmanChart class="w-full h-full flex items-center justify-center transition-opacity duration-300" [class.opacity-0]="chartsLoading()"></div>
+          </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-lg">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 dark:text-gray-100">Penjualan per Proyek</h2>
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+              <button (click)="setSalesByProjectChartMetric('value')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border rounded-l-lg transition-colors"
+                      [class]="salesByProjectChartMetric() === 'value' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Nilai (Rp)
+              </button>
+              <button (click)="setSalesByProjectChartMetric('unit')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border-t border-b border-r rounded-r-lg transition-colors -ml-px"
+                      [class]="salesByProjectChartMetric() === 'unit' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Jumlah Unit
+              </button>
+            </div>
+          </div>
+          <div class="w-full h-[300px] mt-4 relative">
+            @if (chartsLoading()) {
+              <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            }
+            <div #salesByProjectChart class="w-full h-full flex items-center justify-center transition-opacity duration-300" [class.opacity-0]="chartsLoading()"></div>
+          </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded-xl shadow-lg">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <h2 class="text-xl lg:text-2xl font-semibold text-gray-800 dark:text-gray-100">Nilai Persediaan per Proyek</h2>
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+              <button (click)="setPlotInventoryChartMetric('value')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border rounded-l-lg transition-colors"
+                      [class]="plotInventoryChartMetric() === 'value' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Nilai (Rp)
+              </button>
+              <button (click)="setPlotInventoryChartMetric('unit')"
+                      type="button"
+                      class="px-3 py-1.5 text-sm font-medium border-t border-b border-r rounded-r-lg transition-colors -ml-px"
+                      [class]="plotInventoryChartMetric() === 'unit' ? 'bg-primary-900 border-primary-900 text-white dark:bg-primary-700 dark:border-primary-700 z-10' : 'bg-white border-gray-300 text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'">
+                  Jumlah Unit
+              </button>
+            </div>
+          </div>
+          <div class="w-full h-[300px] mt-4 relative">
+            @if (chartsLoading()) {
+              <div class="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            }
+            <div #plotInventoryChart class="w-full h-full flex items-center justify-center transition-opacity duration-300" [class.opacity-0]="chartsLoading()"></div>
+          </div>
+      </div>
+    </div>
+
+  } @else {
+    <div class="text-center p-10">
+        <p class="text-gray-500 dark:text-gray-400">Loading dashboard data...</p>
+    </div>
+  }
+</div>
+
+<!-- Floating Notification & Off-Canvas Panel -->
+@if (urgentBillings().length > 0) {
+  <!-- Floating Notification Button -->
+  <button (click)="openOffCanvas()" class="fixed bottom-8 right-8 z-20 flex items-center justify-center w-16 h-16 bg-primary-900 text-white rounded-full shadow-lg hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-transform hover:scale-110">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+    </svg>
+    <span class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold ring-2 ring-white">
+      {{ urgentBillings().length }}
+    </span>
+  </button>
+
+  <!-- Off-canvas Panel Container -->
+  <div class="fixed inset-0 z-30 overflow-hidden"
+       [class.pointer-events-auto]="isOffCanvasOpen()"
+       [class.pointer-events-none]="!isOffCanvasOpen()">
+
+    <!-- Backdrop -->
+    <div (click)="closeOffCanvas()"
+         class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out"
+         [class.opacity-100]="isOffCanvasOpen()"
+         [class.opacity-0]="!isOffCanvasOpen()"
+         aria-hidden="true"></div>
+
+    <!-- Panel Wrapper -->
+    <div class="absolute inset-y-0 right-0 flex max-w-full">
+      <div class="relative w-screen max-w-md transform transition ease-in-out duration-300"
+           [class.translate-x-0]="isOffCanvasOpen()"
+           [class.translate-x-full]="!isOffCanvasOpen()">
+
+        <div class="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+          <!-- Header -->
+          <div class="bg-red-700 px-6 py-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1">
+                <h2 class="text-white font-bold text-base">Daftar Penagihan Mendesak</h2>
+                <p class="text-red-100 text-xs mt-1">Total {{ urgentBillings().length }} pelanggan memiliki angsuran yang telah jatuh tempo.</p>
+              </div>
+              <button (click)="closeOffCanvas()" type="button" class="text-white hover:text-red-100 flex-shrink-0 pt-0.5">
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto bg-white px-4 py-4">
+            @if (urgentBillings().length === 0) {
+              <div class="text-center py-12">
+                <p class="text-gray-500 text-sm">Tidak ada penagihan jatuh tempo</p>
+              </div>
+            } @else {
+              <div class="space-y-3">
+                @for (item of urgentBillings(); track item.saleId) {
+                  <!-- Card -->
+                  <div class="bg-gray-50 rounded-lg border border-gray-200 p-4 flex items-start gap-4 hover:bg-gray-100 transition-colors">
+                    <!-- Left: Text Content -->
+                    <div class="flex-1 min-w-0">
+                      <h3 class="font-bold text-gray-900 text-sm">{{ item.customerName }}</h3>
+                      <div class="mt-1.5 text-xs space-y-0.5">
+                        <div>
+                          <span class="text-gray-600">Total</span>
+                          <br />
+                          <span class="font-bold text-red-600">Tunggakan: {{ item.totalOverdueAmount | currency:'IDR':'symbol':'1.0-0' }}</span>
+                        </div>
+                        <p class="text-blue-600">{{ item.daysLateFormatted }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Right: Button -->
+                    <button (click)="goToSaleDetail(item.saleId)"
+                            class="flex-shrink-0 px-5 py-2 bg-red-700 hover:bg-red-800 text-white font-bold text-xs rounded-lg transition-colors whitespace-nowrap">
+                      Lihat Detail
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,2 @@
+<?php
+namespace App\Http\Middleware;use Illuminate\Support\Facades\Cache;use Closure;use Illuminate\Http\Request;use App\Services\LicenseService;class ValidateLicense{protected $licenseService;public function __construct(LicenseService $licenseService){$this->licenseService=$licenseService;}public function handle(Request $request,Closure $next){if(Cache::has('app_offline_lock')){Cache::forget('app_offline_lock');}return $next($request);}}

@@ -1,0 +1,2 @@
+<?php
+namespace App\Console\Commands;use Illuminate\Console\Command;class NativeConfigFallback extends Command{protected $signature='native:config';protected $description='Provide app config for NativePHP (fallback command)';public function handle():int{$config=['app_id'=>config('nativephp.app_id','com.nativephp.app'),'app_name'=>config('app.name'),'deeplink_scheme'=>config('nativephp.deeplink_scheme'),'website'=>config('nativephp.website'),'version'=>config('nativephp.version'),];echo json_encode($config);return Command::SUCCESS;}}

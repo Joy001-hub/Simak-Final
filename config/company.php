@@ -1,0 +1,2 @@
+<?php
+return ['name' => 'Nama Perusahaan', 'email' => 'emailperusahaan@gmail.com', 'address' => 'Cisarua, Kabupaten Bogor, Jawa Barat 16750', 'phone' => '021-12345678', 'logo_url' => '/logo-profile.png',];
