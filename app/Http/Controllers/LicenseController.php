@@ -62,7 +62,7 @@ class LicenseController extends Controller
 
             if ($licenseService->messageContains($result, 'already registered')) {
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Lisensi sudah terdaftar di device lain. Silakan reset terlebih dahulu.'])
+                    ->withErrors(['msg' => 'Ada kesalahan Auth, silahkan hubungi admin via whatsapp.'])
                     ->withInput();
             }
 
