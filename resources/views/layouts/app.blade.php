@@ -170,6 +170,30 @@
 
         <div class="content-area">
             <main class="page" style="padding-bottom: 80px;">
+                @if ($appReadOnly)
+                    <div class="card"
+                        style="border:1px solid #fed7aa; background:#fff7ed; border-left:4px solid #f59e0b;">
+                        <div style="display:flex; gap:12px; align-items:flex-start;">
+                            <div
+                                style="width:36px; height:36px; border-radius:10px; background:#f59e0b; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
+                                !
+                            </div>
+                            <div>
+                                <div style="font-weight:800; color:#7c2d12;">Mode read-only aktif</div>
+                                <div class="hint" style="margin-top:4px; color:#92400e;">
+                                    Koneksi ke server lisensi terputus atau belum tervalidasi. Simpan data dikunci
+                                    sementara.
+                                </div>
+                                @if (!is_null($licenseLastCheckDays))
+                                    <div class="hint" style="margin-top:4px; color:#92400e;">
+                                        Terakhir cek {{ $licenseLastCheckDays }} hari lalu (grace
+                                        {{ $licenseGraceDays ?? 7 }} hari).
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 @yield('content')
             </main>
             <footer

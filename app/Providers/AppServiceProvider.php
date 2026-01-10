@@ -6,6 +6,7 @@ use App\Console\Commands\NativeConfigFallback;
 use App\Console\Commands\NativePhpIniFallback;
 use App\Models\CompanyProfile;
 use App\Models\Payment;
+use App\Services\LicenseService;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -89,6 +90,27 @@ class AppServiceProvider extends ServiceProvider
                     $overdueCount = $overduePayments->count();
                 }
 
+                $licenseLastCheckAt = null;
+                $licenseLastCheckDays = null;
+                $licenseGraceDays = (int) config('license.grace_days', 7);
+
+                try {
+                    $licenseData = app(LicenseService::class)->loadLocalLicense();
+                    if (is_array($licenseData)) {
+                        $licenseLastCheckAt = $licenseData['last_check_at'] ?? null;
+                        if ($licenseLastCheckAt) {
+                            try {
+                                $licenseLastCheckDays = Carbon::parse($licenseLastCheckAt)->diffInDays(now());
+                            } catch (\Throwable $e) {
+                                $licenseLastCheckDays = null;
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $licenseLastCheckAt = null;
+                    $licenseLastCheckDays = null;
+                }
+
                 $context = app(TenantContext::class);
 
                 $view
@@ -98,7 +120,10 @@ class AppServiceProvider extends ServiceProvider
                     ->with('overduePayments', $overduePayments)
                     ->with('appMode', $context->getMode())
                     ->with('appReadOnly', $context->isReadOnly())
-                    ->with('appReadOnlyReason', $context->getReadOnlyReason());
+                    ->with('appReadOnlyReason', $context->getReadOnlyReason())
+                    ->with('licenseLastCheckAt', $licenseLastCheckAt)
+                    ->with('licenseLastCheckDays', $licenseLastCheckDays)
+                    ->with('licenseGraceDays', $licenseGraceDays);
             });
         } catch (\Exception $e) {
         }

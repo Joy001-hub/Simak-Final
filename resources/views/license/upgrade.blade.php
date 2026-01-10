@@ -55,6 +55,32 @@
                         onclick="return confirm('Mulai migrasi data ke cloud?');">Mulai Migrasi</button>
                 </form>
             </div>
+
+            <div class="card" style="gap:10px;">
+                <div>
+                    <h4 class="panel-title" style="margin:0;">Add-on Perangkat</h4>
+                    <p class="panel-sub" style="margin:4px 0 0;">
+                        Tambah kuota perangkat untuk akun premium.
+                    </p>
+                    @if ($deviceStats)
+                        <p class="hint" style="margin-top:6px;">Limit sekarang: {{ $deviceStats['limit'] }} perangkat.</p>
+                    @endif
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    @if (!empty($addonUrl))
+                        <a class="btn primary" href="{{ $addonUrl }}" target="_blank"
+                            style="padding:8px 12px; box-shadow:none;">Beli Add-on</a>
+                    @endif
+                    <form action="{{ route('license.upgrade.devices') }}" method="POST"
+                        style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        @csrf
+                        <input type="number" name="add_devices" min="1" max="10" value="1" class="input"
+                            style="padding:8px; width:120px;">
+                        <button class="btn" type="submit" style="padding:8px 12px;">Tambah Kuota</button>
+                    </form>
+                </div>
+                <p class="hint" style="margin:0;">Masukkan jumlah perangkat tambahan setelah pembelian add-on.</p>
+            </div>
         @endif
     </div>
 @endsection

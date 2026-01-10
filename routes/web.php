@@ -78,4 +78,5 @@ Route::middleware([EnsureLicenseIsActive::class])->group(function () {
     Route::get('/upgrade', [LicenseController::class, 'showUpgrade'])->name('license.upgrade');
     Route::post('/upgrade/check', [LicenseController::class, 'checkUpgrade'])->name('license.upgrade.check');
     Route::post('/upgrade/migrate', [LicenseController::class, 'migrateToCloud'])->name('license.upgrade.migrate');
+    Route::post('/upgrade/devices', [LicenseController::class, 'addDeviceAddon'])->name('license.upgrade.devices');
 });

@@ -510,6 +510,7 @@ class LicenseController extends Controller
         $licenseKey = $local['license_key'] ?? null;
         $subscriptionStatus = $local['subscription_status'] ?? null;
         $upgradeUrl = config('services.sejoli.upgrade_url');
+        $addonUrl = config('services.sejoli.addon_url');
 
         $deviceStats = null;
         if ($licenseKey && $subscriptionStatus === 'active') {
@@ -523,6 +524,7 @@ class LicenseController extends Controller
         return view('license.upgrade', [
             'subscriptionStatus' => $subscriptionStatus,
             'upgradeUrl' => $upgradeUrl,
+            'addonUrl' => $addonUrl,
             'deviceStats' => $deviceStats,
         ]);
     }
@@ -576,6 +578,35 @@ class LicenseController extends Controller
             Log::error('[License] checkUpgrade error: ' . $e->getMessage());
             return redirect()->route('license.upgrade')
                 ->withErrors(['msg' => 'Terjadi kesalahan saat cek status. Silakan coba lagi.']);
+        }
+    }
+
+    public function addDeviceAddon(Request $request, LicenseService $licenseService, TenantService $tenantService)
+    {
+        try {
+            $request->validate([
+                'add_devices' => 'required|integer|min:1|max:10',
+            ]);
+
+            $local = $licenseService->loadLocalLicense();
+            $licenseKey = $local['license_key'] ?? null;
+            $subscriptionStatus = $local['subscription_status'] ?? null;
+
+            if (!$licenseKey || $subscriptionStatus !== 'active') {
+                return redirect()->route('license.upgrade')
+                    ->withErrors(['msg' => 'Subscription belum aktif.']);
+            }
+
+            $additional = (int) $request->input('add_devices');
+            $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
+            $result = $tenantService->addDevices($licenseKey, $additional);
+
+            return redirect()->route('license.upgrade')
+                ->with('success', "Kuota perangkat bertambah dari {$result['previous']} ke {$result['current']}.");
+        } catch (\Throwable $e) {
+            Log::error('[License] addDeviceAddon error: ' . $e->getMessage());
+            return redirect()->route('license.upgrade')
+                ->withErrors(['msg' => 'Gagal menambah kuota perangkat. Silakan coba lagi.']);
         }
     }
 

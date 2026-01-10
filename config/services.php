@@ -25,5 +25,6 @@ return [
     'sejoli' => [
         'base_url' => env('SEJOLI_API_URL', env('SEJOLI_BASE_URL', 'https://kavling.pro')),
         'upgrade_url' => env('SEJOLI_UPGRADE_URL'),
+        'addon_url' => env('SEJOLI_ADDON_URL'),
     ],
 ];

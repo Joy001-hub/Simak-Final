@@ -112,4 +112,30 @@ class TenantService
             'limit' => (int) ($tenant->max_devices ?? $this->modeService->maxDevices()),
         ];
     }
+
+    public function addDevices(string $licenseKey, int $additional): array
+    {
+        $tenantKey = $this->modeService->tenantKey($licenseKey);
+        $tenant = DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->first();
+
+        if (!$tenant) {
+            $this->ensureTenant($licenseKey);
+            $tenant = DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->first();
+        }
+
+        $baseLimit = $this->modeService->maxDevices();
+        $currentLimit = (int) ($tenant->max_devices ?? $baseLimit);
+        $currentLimit = max($currentLimit, $baseLimit);
+        $newLimit = $currentLimit + $additional;
+
+        DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->update([
+            'max_devices' => $newLimit,
+            'updated_at' => now(),
+        ]);
+
+        return [
+            'previous' => $currentLimit,
+            'current' => $newLimit,
+        ];
+    }
 }
