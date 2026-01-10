@@ -4,8 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 require_once __DIR__ . '/mbstring_polyfill.php';
@@ -50,7 +50,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command(\App\Console\Commands\ValidateLicenseCommand::class)->everyFiveMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_ALL);
+        $middleware->trustProxies(at: '*', headers: SymfonyRequest::HEADER_X_FORWARDED_ALL);
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\ResolveAppMode::class,
             \App\Http\Middleware\EnsureReadOnlyMode::class,
