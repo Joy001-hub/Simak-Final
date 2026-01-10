@@ -75,4 +75,7 @@ Route::middleware([EnsureLicenseIsActive::class])->group(function () {
     Route::post('/manajemen-data/reset', [DataManagementController::class, 'reset'])->name('data.reset');
     Route::get('/manajemen-data/backup', [DataManagementController::class, 'backup'])->name('data.backup');
     Route::post('/manajemen-data/restore', [DataManagementController::class, 'restore'])->name('data.restore');
+    Route::get('/upgrade', [LicenseController::class, 'showUpgrade'])->name('license.upgrade');
+    Route::post('/upgrade/check', [LicenseController::class, 'checkUpgrade'])->name('license.upgrade.check');
+    Route::post('/upgrade/migrate', [LicenseController::class, 'migrateToCloud'])->name('license.upgrade.migrate');
 });

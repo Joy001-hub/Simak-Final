@@ -72,14 +72,15 @@ class SejoliService
         return null;
     }
 
-    public function registerLicense(string $email, string $password, string $licenseKey): ?array
+    public function registerLicense(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
         try {
+            $deviceId = $deviceId ?: $this->getHardwareID();
             $requestData = [
                 'user_email' => trim($email),
                 'user_pass' => $password,
                 'license' => trim($licenseKey),
-                'string' => $this->getHardwareID(),
+                'string' => $deviceId,
             ];
 
             Log::info('[Sejoli] Register request', [
@@ -149,7 +150,7 @@ class SejoliService
         return $this->validateLicense($licenseKey, $hardwareId, null, $email, $password);
     }
 
-    public function resetLicense(string $email, string $password, string $licenseKey, ?string $token = null): ?array
+    public function resetLicense(string $email, string $password, string $licenseKey, ?string $deviceId = null, ?string $token = null): ?array
     {
         try {
             $http = $this->http()->asForm();
@@ -158,11 +159,12 @@ class SejoliService
                 $http = $http->withToken($token);
             }
 
+            $deviceId = $deviceId ?: $this->getHardwareID();
             $response = $http->post($this->baseUrl . '/sejoli-delete-license/', [
                 'user_email' => trim($email),
                 'user_pass' => $password,
                 'license' => trim($licenseKey),
-                'string' => $this->getHardwareID(),
+                'string' => $deviceId,
             ]);
 
             $body = $response->json();

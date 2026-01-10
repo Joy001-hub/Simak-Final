@@ -1,2 +1,86 @@
 <?php
-namespace App\Http\Middleware;use Closure;use Illuminate\Http\Request;use Illuminate\Support\Facades\DB;use Illuminate\Support\Facades\Schema;use Symfony\Component\HttpFoundation\Response;class EnsureDatabaseMigrated{public function handle(Request $request,Closure $next):Response{if($request->is('_debugbar/*','vendor/*','build/*','assets/*','favicon.ico')){return $next($request);}try{$this->ensureColumnsExist();}catch(\Throwable $e){if(function_exists('logger')){logger()->warning('Database column check failed: '.$e->getMessage());}}return $next($request);}protected function ensureColumnsExist():void{$salesColumns=['status_before_cancel'=>"ALTER TABLE sales ADD COLUMN status_before_cancel TEXT DEFAULT NULL",'refund_amount'=>"ALTER TABLE sales ADD COLUMN refund_amount REAL DEFAULT NULL",'parent_sale_id'=>"ALTER TABLE sales ADD COLUMN parent_sale_id INTEGER DEFAULT NULL",'notes'=>"ALTER TABLE sales ADD COLUMN notes TEXT DEFAULT NULL",];foreach($salesColumns as $column=>$sql){if(!$this->columnExists('sales',$column)){try{DB::statement($sql);if(function_exists('logger')){logger()->info("Added missing column: sales.{$column}");}}catch(\Throwable $e){if(function_exists('logger')){logger()->warning("Failed to add sales.{$column}: ".$e->getMessage());}}}}if(!$this->columnExists('projects','notes')){try{DB::statement("ALTER TABLE projects ADD COLUMN notes TEXT DEFAULT NULL");if(function_exists('logger')){logger()->info("Added missing column: projects.notes");}}catch(\Throwable $e){if(function_exists('logger')){logger()->warning("Failed to add projects.notes: ".$e->getMessage());}}}}protected function columnExists(string $table,string $column):bool{try{$columns=DB::select("PRAGMA table_info({$table})");foreach($columns as $col){if($col->name===$column){return true;}}return false;}catch(\Throwable $e){return true;}}}
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Symfony\Component\HttpFoundation\Response;
+
+class EnsureDatabaseMigrated
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        if ($request->is('_debugbar/*', 'vendor/*', 'build/*', 'assets/*', 'favicon.ico')) {
+            return $next($request);
+        }
+
+        try {
+            $this->ensureColumnsExist();
+        } catch (\Throwable $e) {
+            if (function_exists('logger')) {
+                logger()->warning('Database column check failed: ' . $e->getMessage());
+            }
+        }
+
+        return $next($request);
+    }
+
+    protected function ensureColumnsExist(): void
+    {
+        $salesColumns = [
+            'status_before_cancel' => "ALTER TABLE sales ADD COLUMN status_before_cancel TEXT DEFAULT NULL",
+            'refund_amount' => "ALTER TABLE sales ADD COLUMN refund_amount REAL DEFAULT NULL",
+            'parent_sale_id' => "ALTER TABLE sales ADD COLUMN parent_sale_id INTEGER DEFAULT NULL",
+            'notes' => "ALTER TABLE sales ADD COLUMN notes TEXT DEFAULT NULL",
+        ];
+
+        foreach ($salesColumns as $column => $sql) {
+            if (!$this->columnExists('sales', $column)) {
+                try {
+                    DB::statement($sql);
+                    if (function_exists('logger')) {
+                        logger()->info("Added missing column: sales.{$column}");
+                    }
+                } catch (\Throwable $e) {
+                    if (function_exists('logger')) {
+                        logger()->warning("Failed to add sales.{$column}: " . $e->getMessage());
+                    }
+                }
+            }
+        }
+
+        if (!$this->columnExists('projects', 'notes')) {
+            try {
+                DB::statement("ALTER TABLE projects ADD COLUMN notes TEXT DEFAULT NULL");
+                if (function_exists('logger')) {
+                    logger()->info("Added missing column: projects.notes");
+                }
+            } catch (\Throwable $e) {
+                if (function_exists('logger')) {
+                    logger()->warning("Failed to add projects.notes: " . $e->getMessage());
+                }
+            }
+        }
+    }
+
+    protected function columnExists(string $table, string $column): bool
+    {
+        try {
+            if (DB::getDriverName() === 'sqlite') {
+                $columns = DB::select("PRAGMA table_info({$table})");
+                foreach ($columns as $col) {
+                    if ($col->name === $column) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return Schema::hasColumn($table, $column);
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+}

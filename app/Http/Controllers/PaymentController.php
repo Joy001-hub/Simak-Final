@@ -47,8 +47,6 @@ class PaymentController extends Controller
             Log::info('flex-payment-db-debug', [
                 'default_connection' => config('database.default'),
                 'default_db' => DB::connection()->getDatabaseName(),
-                'nativephp_db' => DB::connection('nativephp')->getDatabaseName(),
-                'sqlite_db' => DB::connection('sqlite')->getDatabaseName(),
             ]);
 
             DB::beginTransaction();

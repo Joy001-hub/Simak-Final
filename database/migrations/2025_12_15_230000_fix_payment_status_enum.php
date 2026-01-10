@@ -10,6 +10,12 @@ return new class extends Migration {
     public function up(): void
     {
 
+        $driver = DB::getDriverName();
+
+        if ($driver !== 'sqlite') {
+            return;
+        }
+
         DB::transaction(function () {
 
             DB::statement('PRAGMA foreign_keys=OFF;');

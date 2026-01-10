@@ -1,2 +1,19 @@
 <?php
-namespace App\Models;use Illuminate\Database\Eloquent\Factories\HasFactory;use Illuminate\Database\Eloquent\Model;class Marketer extends Model{use HasFactory;protected $fillable=['name','phone',];public function sales(){return $this->hasMany(Sale::class);}}
+
+namespace App\Models;
+
+use App\Models\Concerns\HasTenantKey;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Marketer extends Model
+{
+    use HasFactory;
+    use HasTenantKey;
+
+    protected $fillable = [
+        'tenant_key',
+        'name',
+        'phone',
+    ];
+}

@@ -51,6 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('web', [
+            \App\Http\Middleware\ResolveAppMode::class,
+            \App\Http\Middleware\EnsureReadOnlyMode::class,
             \App\Http\Middleware\EnsureDatabaseMigrated::class,
             \App\Http\Middleware\SanitizeInput::class,
             \App\Http\Middleware\ContentSecurityPolicy::class,

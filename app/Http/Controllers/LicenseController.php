@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Exceptions\DeviceLimitExceededException;
 use App\Services\LicenseService;
 use App\Services\SejoliService;
+use App\Services\TenantService;
+use App\Services\CloudMigrationService;
 use Illuminate\Support\Facades\Log;
 
 class LicenseController extends Controller
@@ -69,11 +72,16 @@ class LicenseController extends Controller
             $isValid = $licenseService->isRemoteValid($result, $licenseKey, 'activate');
 
             if ($isValid) {
+                $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
+                $hardwareId = $licenseService->getHardwareId();
+
                 $saved = $licenseService->saveLocalLicense([
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $licenseService->getHardwareId(),
+                    'hardware_id' => $hardwareId,
                     'email' => $email,
+                    'subscription_status' => $subscriptionStatus,
+                    'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Registered via activation',
                 ]);
@@ -87,6 +95,19 @@ class LicenseController extends Controller
                     return redirect()->route('license.activate.form')
                         ->withErrors(['msg' => 'Aktivasi berhasil, tapi ' . $errorMsg . ' Coba jalankan aplikasi sebagai Administrator.'])
                         ->withInput();
+                }
+
+                if ($subscriptionStatus === 'active') {
+                    try {
+                        $tenantService = app(TenantService::class);
+                        $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
+                        $tenantService->registerDevice($licenseKey, $hardwareId);
+                    } catch (DeviceLimitExceededException $e) {
+                        return redirect()->route('license.activate.form')
+                            ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
+                    } catch (\Throwable $e) {
+                        Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
+                    }
                 }
 
                 session(['license_authenticated' => true]);
@@ -149,13 +170,31 @@ class LicenseController extends Controller
             $isValid = $licenseService->isRemoteValid($result, $licenseKey, 'validate');
 
             if ($isValid) {
+                $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
+                $hardwareId = $licenseService->getHardwareId();
+
                 $licenseService->saveLocalLicense([
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $licenseService->getHardwareId(),
+                    'hardware_id' => $hardwareId,
+                    'subscription_status' => $subscriptionStatus,
+                    'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Validated via login',
                 ]);
+
+                if ($subscriptionStatus === 'active') {
+                    try {
+                        $tenantService = app(TenantService::class);
+                        $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
+                        $tenantService->registerDevice($licenseKey, $hardwareId);
+                    } catch (DeviceLimitExceededException $e) {
+                        return redirect()->route('license.activate.form')
+                            ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
+                    } catch (\Throwable $e) {
+                        Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
+                    }
+                }
 
                 Log::info('[License] login successful', ['license' => $licenseKey]);
                 return redirect()->route('dashboard');
@@ -221,15 +260,34 @@ class LicenseController extends Controller
 
             if ($isValid) {
                 $remember = $request->boolean('remember');
+                $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
+                $hardwareId = $licenseService->getHardwareId();
+
                 $licenseService->saveLocalLicense([
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $licenseService->getHardwareId(),
+                    'hardware_id' => $hardwareId,
                     'email' => $email,
+                    'subscription_status' => $subscriptionStatus,
+                    'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Validated via auth login',
                     'remember_session' => $remember,
                 ]);
+
+                if ($subscriptionStatus === 'active') {
+                    try {
+                        $tenantService = app(TenantService::class);
+                        $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
+                        $tenantService->registerDevice($licenseKey, $hardwareId);
+                    } catch (DeviceLimitExceededException $e) {
+                        return redirect()->route('login')
+                            ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.'])
+                            ->withInput();
+                    } catch (\Throwable $e) {
+                        Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
+                    }
+                }
 
                 session(['license_authenticated' => true]);
                 session(['license_user_email' => $email]);
@@ -404,15 +462,32 @@ class LicenseController extends Controller
             $valid = $licenseService->isRemoteValid($resp, $licenseKey, 'validate');
 
             if ($valid) {
+                $subscriptionStatus = $licenseService->extractSubscriptionStatus($resp);
+
                 $licenseService->saveLocalLicense(array_merge($info, [
                     'license_key' => $licenseKey,
                     'status' => 'active',
                     'hardware_id' => $hardwareId,
                     'string' => $hardwareId,
                     'email' => $info['email'] ?? null,
+                    'subscription_status' => $subscriptionStatus,
+                    'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Revalidate successful',
                 ]));
+
+                if ($subscriptionStatus === 'active') {
+                    try {
+                        $tenantService = app(TenantService::class);
+                        $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
+                        $tenantService->registerDevice($licenseKey, $hardwareId);
+                    } catch (DeviceLimitExceededException $e) {
+                        return redirect()->route('license.activate.form')
+                            ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
+                    } catch (\Throwable $e) {
+                        Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
+                    }
+                }
 
                 return redirect()->route('dashboard')
                     ->with('success', 'Lisensi tervalidasi ulang.');
@@ -426,6 +501,109 @@ class LicenseController extends Controller
             Log::error('[License] revalidate error: ' . $e->getMessage());
             return redirect()->route('license.activate.form')
                 ->withErrors(['msg' => 'Terjadi kesalahan saat validasi. Silakan coba lagi.']);
+        }
+    }
+
+    public function showUpgrade(LicenseService $licenseService)
+    {
+        $local = $licenseService->loadLocalLicense();
+        $licenseKey = $local['license_key'] ?? null;
+        $subscriptionStatus = $local['subscription_status'] ?? null;
+        $upgradeUrl = config('services.sejoli.upgrade_url');
+
+        $deviceStats = null;
+        if ($licenseKey && $subscriptionStatus === 'active') {
+            try {
+                $deviceStats = app(TenantService::class)->getDeviceStats($licenseKey);
+            } catch (\Throwable $e) {
+                Log::warning('[License] device stats failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return view('license.upgrade', [
+            'subscriptionStatus' => $subscriptionStatus,
+            'upgradeUrl' => $upgradeUrl,
+            'deviceStats' => $deviceStats,
+        ]);
+    }
+
+    public function checkUpgrade(LicenseService $licenseService)
+    {
+        try {
+            $local = $licenseService->loadLocalLicense();
+            $licenseKey = $local['license_key'] ?? null;
+
+            if (!$licenseKey) {
+                return redirect()->route('license.upgrade')
+                    ->withErrors(['msg' => 'Lisensi tidak ditemukan.']);
+            }
+
+            $hardwareId = $licenseService->getHardwareId();
+            $resp = $licenseService->validateRemote($licenseKey, $hardwareId);
+
+            if ($resp === null) {
+                return redirect()->route('license.upgrade')
+                    ->withErrors(['msg' => 'Gagal menghubungi server. Periksa koneksi internet Anda.']);
+            }
+
+            $subscriptionStatus = $licenseService->extractSubscriptionStatus($resp);
+            $licenseService->saveLocalLicense(array_merge($local, [
+                'license_key' => $licenseKey,
+                'status' => 'active',
+                'hardware_id' => $hardwareId,
+                'subscription_status' => $subscriptionStatus,
+                'subscription_checked_at' => now()->toIso8601String(),
+                'last_check_at' => now()->toIso8601String(),
+                'message' => 'Upgrade status refreshed',
+            ]));
+
+            if ($subscriptionStatus === 'active') {
+                try {
+                    $tenantService = app(TenantService::class);
+                    $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
+                    $tenantService->registerDevice($licenseKey, $hardwareId);
+                } catch (DeviceLimitExceededException $e) {
+                    return redirect()->route('license.upgrade')
+                        ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
+                } catch (\Throwable $e) {
+                    Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
+                }
+            }
+
+            return redirect()->route('license.upgrade')
+                ->with('success', 'Status subscription berhasil diperbarui.');
+        } catch (\Throwable $e) {
+            Log::error('[License] checkUpgrade error: ' . $e->getMessage());
+            return redirect()->route('license.upgrade')
+                ->withErrors(['msg' => 'Terjadi kesalahan saat cek status. Silakan coba lagi.']);
+        }
+    }
+
+    public function migrateToCloud(Request $request, LicenseService $licenseService, CloudMigrationService $migrationService)
+    {
+        try {
+            $request->validate([
+                'mode' => 'required|in:merge,replace',
+            ]);
+
+            $local = $licenseService->loadLocalLicense();
+            $licenseKey = $local['license_key'] ?? null;
+            $subscriptionStatus = $local['subscription_status'] ?? null;
+
+            if (!$licenseKey || $subscriptionStatus !== 'active') {
+                return redirect()->route('license.upgrade')
+                    ->withErrors(['msg' => 'Subscription belum aktif.']);
+            }
+
+            $merge = $request->mode === 'merge';
+            $migrationService->migrateLocalToCloud($licenseKey, $merge);
+
+            return redirect()->route('license.upgrade')
+                ->with('success', $merge ? 'Migrasi merge selesai.' : 'Migrasi replace selesai.');
+        } catch (\Throwable $e) {
+            Log::error('[License] migrateToCloud error: ' . $e->getMessage());
+            return redirect()->route('license.upgrade')
+                ->withErrors(['msg' => 'Migrasi gagal. Silakan coba lagi.']);
         }
     }
 

@@ -326,9 +326,9 @@ class LicenseService
         }
     }
 
-    public function activate(string $email, string $password, string $licenseKey): ?array
+    public function activate(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
-        return app(SejoliService::class)->registerLicense($email, $password, $licenseKey);
+        return app(SejoliService::class)->registerLicense($email, $password, $licenseKey, $deviceId);
     }
 
     public function validateRemote(string $licenseKey, ?string $hardwareId = null): ?array
@@ -336,9 +336,9 @@ class LicenseService
         return app(SejoliService::class)->validateLicense($licenseKey, $hardwareId);
     }
 
-    public function resetRemote(string $email, string $password, string $licenseKey): ?array
+    public function resetRemote(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
-        return app(SejoliService::class)->resetLicense($email, $password, $licenseKey);
+        return app(SejoliService::class)->resetLicense($email, $password, $licenseKey, $deviceId);
     }
 
     public function messageContains($payload, string|array $needles): bool
@@ -374,6 +374,15 @@ class LicenseService
         }
 
         return false;
+    }
+
+    public function extractSubscriptionStatus(?array $payload): ?string
+    {
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        return $payload['data']['subscription_status'] ?? null;
     }
 
     public function isRemoteValid($payload, string $licenseKey, string $mode = 'validate'): bool

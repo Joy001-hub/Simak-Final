@@ -55,5 +55,24 @@
                 <button class="btn" type="submit" style="padding:8px 12px;">Pulihkan</button>
             </form>
         </div>
+
+        <div class="card" style="gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+                <div>
+                    <h5 class="panel-title" style="margin:0;">Upgrade ke Cloud</h5>
+                    <p class="panel-sub" style="margin:4px 0 0;">Aktifkan mode Neon untuk akses multi-perangkat.</p>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a class="btn primary" href="{{ route('license.upgrade') }}"
+                        style="padding:8px 12px; box-shadow:none;">Kelola Upgrade</a>
+                </div>
+            </div>
+            <div class="hint" style="margin-top:6px;">
+                Mode saat ini: {{ $appMode === 'cloud' ? 'Cloud' : 'Local' }}
+                @if ($appReadOnly)
+                    (Read-only)
+                @endif
+            </div>
+        </div>
     </div>
 @endsection
