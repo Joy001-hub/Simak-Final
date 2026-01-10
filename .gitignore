@@ -17,10 +17,23 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Runtime/cache
-/storage/framework/
-/storage/logs/
+/storage/framework/*
+!/storage/framework/.gitignore
+!/storage/framework/cache/
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/
+!/storage/framework/sessions/.gitignore
+!/storage/framework/testing/
+!/storage/framework/testing/.gitignore
+!/storage/framework/views/
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/
+!/storage/logs/.gitignore
 /storage/debugbar/
-/bootstrap/cache/
+/bootstrap/cache/*
+!/bootstrap/cache/
+!/bootstrap/cache/.gitignore
 
 # OS/editor
 .DS_Store
