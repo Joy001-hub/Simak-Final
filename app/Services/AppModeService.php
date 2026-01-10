@@ -19,6 +19,25 @@ class AppModeService
 
     public function resolve(): array
     {
+        $forcedMode = config('license.force_mode');
+        if (is_string($forcedMode)) {
+            $forcedMode = strtolower(trim($forcedMode));
+            if (in_array($forcedMode, [self::MODE_LOCAL, self::MODE_CLOUD], true)) {
+                $tenantKey = null;
+                if ($forcedMode === self::MODE_CLOUD) {
+                    $tenantKey = config('license.force_tenant_key');
+                    if (!$tenantKey) {
+                        $license = $this->licenseService->loadLocalLicense();
+                        if ($license && !empty($license['license_key'])) {
+                            $tenantKey = $this->tenantKey($license['license_key']);
+                        }
+                    }
+                }
+
+                return $this->setContext($forcedMode, $tenantKey, false, null);
+            }
+        }
+
         $license = $this->licenseService->loadLocalLicense();
 
         if (!$license || empty($license['license_key'])) {
