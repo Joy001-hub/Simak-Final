@@ -15,10 +15,15 @@ class LicenseController extends Controller
     public function showActivate(LicenseService $licenseService)
     {
         try {
-            $validation = $licenseService->validateLicense();
-            if ($validation['valid'] ?? false) {
+            if (session('license_authenticated')) {
                 return redirect()->route('dashboard');
             }
+
+            $local = $licenseService->loadLocalLicense();
+            if ($local && !empty($local['license_key']) && ($local['status'] ?? 'inactive') === 'active') {
+                return redirect()->route('login');
+            }
+
             return view('license.activate');
         } catch (\Throwable $e) {
             Log::error('[License] showActivate error: ' . $e->getMessage());
