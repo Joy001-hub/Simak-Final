@@ -8,6 +8,7 @@
 /tmp-asar/
 /public/build/
 /public/hot
+/public/storage
 
 # Logs
 *.log
@@ -16,7 +17,38 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Environment
+.env
+.env.*
+!.env.example
+
+# Credentials
+auth.json
+.npmrc
+.yarnrc
+.yarnrc.yml
+.pnpmfile.cjs
+
+# Local database files
+/local
+/neondb
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+
+# Test caches
+.phpunit.result.cache
+.phpunit.cache/
+.pint.cache
+.php-cs-fixer.cache
+
 # Runtime/cache
+/storage/*.key
+/storage/app/*
+!/storage/app/.gitignore
 /storage/framework/*
 !/storage/framework/.gitignore
 !/storage/framework/cache/
