@@ -50,7 +50,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command(\App\Console\Commands\ValidateLicenseCommand::class)->everyFiveMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*', headers: SymfonyRequest::HEADER_X_FORWARDED_ALL);
+        $forwardedHeaders = SymfonyRequest::HEADER_X_FORWARDED_FOR
+            | SymfonyRequest::HEADER_X_FORWARDED_HOST
+            | SymfonyRequest::HEADER_X_FORWARDED_PORT
+            | SymfonyRequest::HEADER_X_FORWARDED_PROTO;
+
+        $middleware->trustProxies(at: '*', headers: $forwardedHeaders);
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\ResolveAppMode::class,
             \App\Http\Middleware\EnsureReadOnlyMode::class,
