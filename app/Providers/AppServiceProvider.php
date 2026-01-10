@@ -11,6 +11,7 @@ use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if ($this->app->environment('production')) {
+            Vite::useHotFile(storage_path('app/vite.hot'));
+        }
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 NativeConfigFallback::class,
