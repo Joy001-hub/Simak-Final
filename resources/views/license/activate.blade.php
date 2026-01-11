@@ -228,6 +228,11 @@
                         </svg>
                     </button>
 
+                    <p class="text-center text-sm text-slate-500 mt-4">
+                        Sudah aktivasi? <a href="{{ route('login') }}"
+                            class="text-[#b91c3b] font-semibold hover:underline">Login</a>
+                    </p>
+
                     <p class="text-center text-sm text-slate-500 mt-6">
                         Belum punya lisensi? <a href="https://kavling.pro/member-area/license/" target="_blank"
                             class="text-[#b91c3b] font-semibold hover:underline">Ambil lisensi di
