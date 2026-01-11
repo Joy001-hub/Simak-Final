@@ -63,8 +63,7 @@ class AppModeService
 
     public function sharedIdentifier(string $licenseKey): string
     {
-        $salt = (string) config('license.shared_identifier_salt', 'simak');
-        return hash('sha256', $salt . '|' . $licenseKey);
+        return $this->licenseService->sharedIdentifier($licenseKey);
     }
 
     public function shouldReadOnly(array $license): bool
@@ -89,9 +88,13 @@ class AppModeService
         return $last->diffInDays(now()) > $graceDays;
     }
 
-    public function maxDevices(): int
+    public function maxDevices(?string $subscriptionStatus = null): int
     {
-        return (int) config('license.device_limit', 2);
+        if ($subscriptionStatus === 'active') {
+            return (int) config('license.device_limit', 2);
+        }
+
+        return (int) config('license.basic_device_limit', 1);
     }
 
     private function setContext(string $mode, ?string $tenantKey, bool $readOnly, ?string $reason): array

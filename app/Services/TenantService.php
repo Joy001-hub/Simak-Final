@@ -19,21 +19,26 @@ class TenantService
 
         $tenant = DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->first();
         $plan = $subscriptionStatus === 'active' ? 'premium' : 'basic';
+        $baseLimit = $this->modeService->maxDevices($subscriptionStatus);
 
         if (!$tenant) {
             DB::connection('pgsql')->table('tenants')->insert([
                 'tenant_key' => $tenantKey,
                 'plan' => $plan,
                 'subscription_status' => $subscriptionStatus,
-                'max_devices' => $this->modeService->maxDevices(),
+                'max_devices' => $baseLimit,
                 'subscription_checked_at' => $subscriptionStatus ? now() : null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
         } elseif ($subscriptionStatus) {
+            $currentLimit = (int) ($tenant->max_devices ?? 0);
+            $nextLimit = $currentLimit > 0 ? max($currentLimit, $baseLimit) : $baseLimit;
+
             DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->update([
                 'plan' => $plan,
                 'subscription_status' => $subscriptionStatus,
+                'max_devices' => $nextLimit,
                 'subscription_checked_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -81,7 +86,7 @@ class TenantService
             ->whereNull('revoked_at')
             ->count();
 
-        $limit = (int) ($tenant->max_devices ?? $this->modeService->maxDevices());
+        $limit = (int) ($tenant->max_devices ?? $this->modeService->maxDevices($tenant->subscription_status ?? null));
         if ($activeCount >= $limit) {
             throw new DeviceLimitExceededException('Batas perangkat tercapai.');
         }
@@ -109,7 +114,7 @@ class TenantService
 
         return [
             'active' => $activeCount,
-            'limit' => (int) ($tenant->max_devices ?? $this->modeService->maxDevices()),
+            'limit' => (int) ($tenant->max_devices ?? $this->modeService->maxDevices($tenant->subscription_status ?? null)),
         ];
     }
 
@@ -123,7 +128,7 @@ class TenantService
             $tenant = DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->first();
         }
 
-        $baseLimit = $this->modeService->maxDevices();
+        $baseLimit = $this->modeService->maxDevices($tenant->subscription_status ?? null);
         $currentLimit = (int) ($tenant->max_devices ?? $baseLimit);
         $currentLimit = max($currentLimit, $baseLimit);
         $newLimit = $currentLimit + $additional;

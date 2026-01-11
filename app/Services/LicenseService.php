@@ -326,19 +326,105 @@ class LicenseService
         }
     }
 
+    public function sharedIdentifier(string $licenseKey): string
+    {
+        $salt = (string) config('license.shared_identifier_salt', 'simak');
+        return hash('sha256', $salt . '|' . $licenseKey);
+    }
+
+    private function resolveSejoliIdentifier(string $licenseKey, ?string $identifier = null): string
+    {
+        if (is_string($identifier) && trim($identifier) !== '') {
+            return $identifier;
+        }
+
+        $mode = strtolower((string) config('license.sejoli_identifier', 'shared'));
+        if ($mode === 'hardware') {
+            return $this->getHardwareId();
+        }
+
+        return $this->sharedIdentifier($licenseKey);
+    }
+
     public function activate(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
-        return app(SejoliService::class)->registerLicense($email, $password, $licenseKey, $deviceId);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, $deviceId);
+        return app(SejoliService::class)->registerLicense($email, $password, $licenseKey, $identifier);
     }
 
     public function validateRemote(string $licenseKey, ?string $hardwareId = null): ?array
     {
-        return app(SejoliService::class)->validateLicense($licenseKey, $hardwareId);
+        $sejoli = app(SejoliService::class);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, $hardwareId);
+        $primary = $sejoli->validateLicense($licenseKey, $identifier);
+
+        if ($primary === null) {
+            return null;
+        }
+
+        if ($this->isRemoteValid($primary, $licenseKey, 'validate')) {
+            return $primary;
+        }
+
+        $fallback = $this->getHardwareId();
+        if ($fallback !== $identifier) {
+            $secondary = $sejoli->validateLicense($licenseKey, $fallback);
+            if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'validate')) {
+                return $secondary;
+            }
+        }
+
+        return $primary;
+    }
+
+    public function validateRemoteWithAuth(string $email, string $password, string $licenseKey, ?string $hardwareId = null): ?array
+    {
+        $sejoli = app(SejoliService::class);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, $hardwareId);
+        $primary = $sejoli->validateLicenseWithAuth($email, $password, $licenseKey, $identifier);
+
+        if ($primary === null) {
+            return null;
+        }
+
+        if ($this->isRemoteValid($primary, $licenseKey, 'validate')) {
+            return $primary;
+        }
+
+        $fallback = $this->getHardwareId();
+        if ($fallback !== $identifier) {
+            $secondary = $sejoli->validateLicenseWithAuth($email, $password, $licenseKey, $fallback);
+            if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'validate')) {
+                return $secondary;
+            }
+        }
+
+        return $primary;
     }
 
     public function resetRemote(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
-        return app(SejoliService::class)->resetLicense($email, $password, $licenseKey, $deviceId);
+        $sejoli = app(SejoliService::class);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, $deviceId);
+        $primary = $sejoli->resetLicense($email, $password, $licenseKey, $identifier);
+
+        if ($primary === null) {
+            return null;
+        }
+
+        if ($this->isRemoteValid($primary, $licenseKey, 'reset')) {
+            return $primary;
+        }
+
+        $fallback = $this->getHardwareId();
+        if ($fallback !== $identifier) {
+            $secondary = $sejoli->resetLicense($email, $password, $licenseKey, $fallback);
+            if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'reset')) {
+                return $secondary;
+            }
+        }
+
+        return $primary;
     }
 
     public function messageContains($payload, string|array $needles): bool
