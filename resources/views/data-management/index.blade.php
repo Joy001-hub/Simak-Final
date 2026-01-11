@@ -8,7 +8,7 @@
         </div>
     </div>
 
-    <div class="panel-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+    <div class="panel-grid grid-2" style="gap:18px;">
         <div class="card" style="gap:10px;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
                 <div>
@@ -56,22 +56,39 @@
             </form>
         </div>
 
-        <div class="card" style="gap:10px;">
+        <div class="card" style="gap:10px; grid-column: 1 / -1;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
                 <div>
-                    <h5 class="panel-title" style="margin:0;">Upgrade ke Cloud</h5>
-                    <p class="panel-sub" style="margin:4px 0 0;">Aktifkan mode Neon untuk akses multi-perangkat.</p>
+                    <h5 class="panel-title" style="margin:0;">Upgrade Simak Pro</h5>
+                    <p class="panel-sub" style="margin:4px 0 0;">
+                        Aktifkan mode cloud untuk akses multi-perangkat dan data terpusat. Benefit utama:
+                    </p>
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <a class="btn primary" href="{{ route('license.upgrade') }}"
                         style="padding:8px 12px; box-shadow:none;">Kelola Upgrade</a>
                 </div>
             </div>
+            <ul style="margin:0; padding-left:18px; color:#64748B; font-size:13px; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:6px 18px;">
+                <li>Akses multi-perangkat (hingga batas paket).</li>
+                <li>Sinkronisasi data otomatis antar perangkat.</li>
+                <li>Database terpusat, tidak terikat satu device.</li>
+                <li>Login akun tanpa aktivasi ulang berulang.</li>
+                <li>Kontrol perangkat aktif dari dashboard.</li>
+                <li>Add-on perangkat bila butuh lebih banyak.</li>
+                <li>Masa tenggang read-only 7 hari.</li>
+                <li>Pemulihan data lebih cepat saat pindah perangkat.</li>
+                <li>Update fitur premium dan perbaikan prioritas.</li>
+                <li>Audit status langganan dan perangkat.</li>
+            </ul>
             <div class="hint" style="margin-top:6px;">
                 Mode saat ini: {{ $appMode === 'cloud' ? 'Cloud' : 'Local' }}
                 @if ($appReadOnly)
                     (Read-only)
                 @endif
+            </div>
+            <div class="hint" style="margin-top:4px; color:#94A3B8; font-size:12px;">
+                Simak Version {{ config('app.version') }}
             </div>
         </div>
     </div>

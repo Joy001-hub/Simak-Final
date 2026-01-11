@@ -1,7 +1,18 @@
 <?php
 
+$packageVersion = null;
+$packageJsonPath = base_path('package.json');
+
+if (is_file($packageJsonPath)) {
+    $packageJson = json_decode((string) file_get_contents($packageJsonPath), true);
+    if (is_array($packageJson) && isset($packageJson['version'])) {
+        $packageVersion = $packageJson['version'];
+    }
+}
+
 return [
     'name' => env('APP_NAME', 'Simak'),
+    'version' => env('APP_VERSION', $packageVersion ?? env('NATIVEPHP_APP_VERSION', '1.0.0')),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost'),
