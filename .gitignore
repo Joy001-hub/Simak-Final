@@ -4,7 +4,9 @@
 
 # Build outputs
 /dist/
-/build/
+/dist-electron/
+/build/*
+!/build/installer.nsh
 /tmp-asar/
 /public/build/
 /public/hot

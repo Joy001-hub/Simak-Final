@@ -3,6 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktop', {
     runtimeInfo: () => ipcRenderer.invoke('runtime-info'),
     isElectron: true,
+    app: {
+        reload: () => ipcRenderer.invoke('app:reload'),
+        openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+    },
 
     // License management API
     license: {

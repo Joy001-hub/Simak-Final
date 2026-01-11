@@ -5,7 +5,100 @@ const crypto = require('node:crypto');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const devServerUrl = process.env.DEV_SERVER_URL || process.env.VITE_DEV_SERVER_URL || process.env.VITE_DEV_URL;
-const electronAppUrl = process.env.ELECTRON_APP_URL || process.env.APP_URL;
+const defaultProdUrl = process.env.ELECTRON_DEFAULT_URL || 'https://simak-final-production.up.railway.app';
+const shouldUseDefaultUrl = process.env.NODE_ENV === 'production' || app.isPackaged;
+const electronAppUrl = process.env.ELECTRON_APP_URL || process.env.APP_URL || (shouldUseDefaultUrl ? defaultProdUrl : '');
+const retryScheduleMs = [2000, 5000, 10000, 20000, 30000];
+let retryAttempt = 0;
+let retryTimer = null;
+let mainWindowRef = null;
+
+function logToFile(message) {
+    try {
+        const logPath = path.join(app.getPath('userData'), 'electron.log');
+        const line = `[${new Date().toISOString()}] ${message}\n`;
+        fs.appendFileSync(logPath, line, 'utf-8');
+    } catch {
+        // Best-effort logging only.
+    }
+}
+
+function normalizeUrl(rawUrl) {
+    if (!rawUrl) return '';
+    return rawUrl.match(/^https?:\/\//) ? rawUrl : `https://${rawUrl}`;
+}
+
+function getRetryDelay() {
+    const index = Math.min(retryAttempt, retryScheduleMs.length - 1);
+    return retryScheduleMs[index];
+}
+
+function scheduleRetry(mainWindow, url, reason) {
+    clearTimeout(retryTimer);
+    const delay = getRetryDelay();
+    retryAttempt += 1;
+    logToFile(`Retry scheduled in ${delay}ms. reason=${reason || 'unknown'}`);
+    retryTimer = setTimeout(() => {
+        loadAppUrl(mainWindow, url);
+    }, delay);
+}
+
+function showErrorPage(mainWindow, url, errorCode, errorDescription) {
+    const message = errorCode === -138
+        ? 'Network access is blocked. Please allow SIMAK in Windows Firewall/antivirus.'
+        : 'Network request failed. Check your internet connection or backend URL.';
+    const errorHtml = `
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Load error</title>
+                <style>
+                    body { font-family: Arial, sans-serif; background:#0b1224; color:#fff; padding:24px; }
+                    h2 { margin:0 0 12px; }
+                    .card { max-width: 720px; background:#0f1a33; padding:16px 20px; border-radius:10px; }
+                    code { color:#a7f3d0; }
+                    button { padding:8px 12px; border-radius:6px; border:0; cursor:pointer; margin-right:8px; }
+                    .primary { background:#e11d48; color:#fff; }
+                    .ghost { background:#1f2937; color:#fff; }
+                    .muted { color:#cbd5f5; margin-top:12px; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <h2>Failed to load app</h2>
+                    <p><strong>URL:</strong> <code>${url}</code></p>
+                    <p><strong>Error:</strong> <code>${errorDescription} (${errorCode})</code></p>
+                    <p>${message}</p>
+                    <div>
+                        <button class="primary" onclick="window.desktop?.app?.reload?.()">Retry now</button>
+                        <button class="ghost" onclick="window.desktop?.app?.openExternal?.('${url}')">Open in browser</button>
+                    </div>
+                    <p class="muted">Auto-retry is enabled. The app will reconnect when the network is available.</p>
+                </div>
+            </body>
+        </html>`;
+    mainWindow.loadURL(`data:text/html,${encodeURIComponent(errorHtml)}`);
+}
+
+function loadAppUrl(mainWindow, url) {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (isDev && devServerUrl) {
+        logToFile(`Loading dev server: ${devServerUrl}`);
+        mainWindow.loadURL(devServerUrl);
+        return;
+    }
+
+    const normalizedUrl = normalizeUrl(url);
+    if (normalizedUrl) {
+        logToFile(`Loading app URL: ${normalizedUrl}`);
+        mainWindow.loadURL(normalizedUrl);
+        return;
+    }
+
+    const indexPath = path.join(__dirname, 'public', 'build', 'index.html');
+    logToFile(`Loading local file: ${indexPath}`);
+    mainWindow.loadFile(indexPath);
+}
 
 // ==================== License Storage Helpers ====================
 
@@ -154,19 +247,36 @@ function createMainWindow() {
         },
     });
 
-    if (isDev && devServerUrl) {
-        mainWindow.loadURL(devServerUrl);
-        mainWindow.webContents.openDevTools({ mode: 'detach' });
-    } else {
-        if (electronAppUrl) {
-            const normalizedUrl = electronAppUrl.match(/^https?:\/\//)
-                ? electronAppUrl
-                : `https://${electronAppUrl}`;
-            mainWindow.loadURL(normalizedUrl);
-        } else {
-            const indexPath = path.join(__dirname, 'public', 'build', 'index.html');
-            mainWindow.loadFile(indexPath);
+    loadAppUrl(mainWindow, electronAppUrl);
+
+    mainWindow.webContents.on('did-finish-load', () => {
+        const currentUrl = mainWindow.webContents.getURL();
+        if (!currentUrl.startsWith('data:text/html')) {
+            retryAttempt = 0;
+            logToFile(`Page loaded successfully: ${currentUrl}`);
         }
+    });
+
+    mainWindow.webContents.on('did-fail-load', (_, errorCode, errorDescription, validatedURL) => {
+        if (errorCode === -3) {
+            return;
+        }
+        logToFile(`Load failed (${errorCode}): ${errorDescription} for ${validatedURL}`);
+        showErrorPage(mainWindow, validatedURL || normalizeUrl(electronAppUrl), errorCode, errorDescription);
+        scheduleRetry(mainWindow, electronAppUrl, `${errorCode}:${errorDescription}`);
+    });
+
+    mainWindow.webContents.on('console-message', (_, level, message) => {
+        logToFile(`Console [${level}]: ${message}`);
+    });
+
+    mainWindow.webContents.on('render-process-gone', (_, details) => {
+        logToFile(`Renderer gone: ${details.reason}`);
+        scheduleRetry(mainWindow, electronAppUrl, `renderer:${details.reason}`);
+    });
+
+    if (process.env.ELECTRON_DEBUG === '1') {
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -201,7 +311,8 @@ function createMainWindow() {
 
 app.whenReady().then(() => {
     app.setAppUserModelId('com.simak.desktop');
-    createMainWindow();
+    logToFile(`App starting. isDev=${isDev} isPackaged=${app.isPackaged} userData=${app.getPath('userData')}`);
+    mainWindowRef = createMainWindow();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -223,3 +334,18 @@ ipcMain.handle('runtime-info', () => ({
     userDataPath: app.getPath('userData'),
     platform: process.platform,
 }));
+
+ipcMain.handle('app:reload', () => {
+    retryAttempt = 0;
+    if (mainWindowRef) {
+        loadAppUrl(mainWindowRef, electronAppUrl);
+    }
+    return true;
+});
+
+ipcMain.handle('app:openExternal', (_, url) => {
+    if (typeof url === 'string' && url.trim()) {
+        shell.openExternal(url.trim());
+    }
+    return true;
+});
