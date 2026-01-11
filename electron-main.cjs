@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell, ipcMain, safeStorage } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, safeStorage, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -12,6 +13,7 @@ const retryScheduleMs = [2000, 5000, 10000, 20000, 30000];
 let retryAttempt = 0;
 let retryTimer = null;
 let mainWindowRef = null;
+let updateInterval = null;
 
 function logToFile(message) {
     try {
@@ -98,6 +100,58 @@ function loadAppUrl(mainWindow, url) {
     const indexPath = path.join(__dirname, 'public', 'build', 'index.html');
     logToFile(`Loading local file: ${indexPath}`);
     mainWindow.loadFile(indexPath);
+}
+
+function setupAutoUpdater() {
+    if (!app.isPackaged) {
+        return;
+    }
+
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    autoUpdater.on('checking-for-update', () => {
+        logToFile('AutoUpdater: checking for update');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+        logToFile(`AutoUpdater: update available ${info?.version || ''}`);
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        logToFile('AutoUpdater: no update available');
+    });
+
+    autoUpdater.on('error', (error) => {
+        logToFile(`AutoUpdater: error ${error?.message || error}`);
+    });
+
+    autoUpdater.on('download-progress', (progress) => {
+        logToFile(`AutoUpdater: download ${Math.round(progress.percent)}%`);
+    });
+
+    autoUpdater.on('update-downloaded', async (info) => {
+        logToFile(`AutoUpdater: update downloaded ${info?.version || ''}`);
+        const result = await dialog.showMessageBox({
+            type: 'info',
+            buttons: ['Restart now', 'Later'],
+            defaultId: 0,
+            cancelId: 1,
+            title: 'Update ready',
+            message: 'Update sudah siap.',
+            detail: 'Klik "Restart now" untuk update dan buka versi terbaru.',
+        });
+
+        if (result.response === 0) {
+            autoUpdater.quitAndInstall();
+        }
+    });
+
+    autoUpdater.checkForUpdatesAndNotify();
+
+    updateInterval = setInterval(() => {
+        autoUpdater.checkForUpdates();
+    }, 6 * 60 * 60 * 1000);
 }
 
 // ==================== License Storage Helpers ====================
@@ -313,6 +367,7 @@ app.whenReady().then(() => {
     app.setAppUserModelId('com.simak.desktop');
     logToFile(`App starting. isDev=${isDev} isPackaged=${app.isPackaged} userData=${app.getPath('userData')}`);
     mainWindowRef = createMainWindow();
+    setupAutoUpdater();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -322,6 +377,10 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+    }
     if (process.platform !== 'darwin') {
         app.quit();
     }

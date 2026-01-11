@@ -2,8 +2,12 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "name": "kavling-management-pro",
-    "version": "3.1.0",
+    "version": "3.1.1",
     "description": "Kavling Management Pro - Web Application",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Joy001-hub/Simak-Final.git"
+    },
     "author": "",
     "type": "module",
     "main": "electron-main.cjs",
@@ -13,7 +17,8 @@
         "dev": "vite",
         "electron:dev": "cross-env NODE_ENV=development DEV_SERVER_URL=http://localhost:5173 electron .",
         "electron:start": "cross-env NODE_ENV=production electron .",
-        "electron:build": "electron-builder --win --x64"
+        "electron:build": "electron-builder --win --x64",
+        "electron:release": "electron-builder --win --x64 --publish always"
     },
     "dependencies": {
         "@angular/common": "^17.3.8",
@@ -23,6 +28,7 @@
         "@angular/platform-browser-dynamic": "^17.3.8",
         "axios": "^1.11.0",
         "d3": "^7.9.0",
+        "electron-updater": "^6.7.3",
         "rxjs": "^7.8.1",
         "zone.js": "^0.14.10"
     },
@@ -66,6 +72,13 @@
             "perMachine": true,
             "allowToChangeInstallationDirectory": true,
             "include": "build/installer.nsh"
-        }
+        },
+        "publish": [
+            {
+                "provider": "github",
+                "owner": "Joy001-hub",
+                "repo": "Simak-Final"
+            }
+        ]
     }
 }
