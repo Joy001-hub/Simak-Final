@@ -179,9 +179,11 @@
                 @endif
 
                 {{-- Form --}}
-                <form id="activate-form" action="{{ route('license.activate') }}" method="POST"
-                    class="px-8 pb-8 space-y-5">
-                    @csrf
+            <form id="activate-form" action="{{ route('license.activate') }}" method="POST"
+                class="px-8 pb-8 space-y-5">
+                @csrf
+                <input type="hidden" name="device_id" id="device_id">
+                <input type="hidden" name="device_name" id="device_name">
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2" for="email">Email</label>
@@ -257,6 +259,69 @@
         const pageLoadTime = Date.now();
         const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour in ms
         let isSubmitting = false;
+        const DEVICE_ID_KEY = 'simak_device_id';
+
+        function getOrCreateDeviceId() {
+            let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+            if (!deviceId) {
+                if (crypto?.randomUUID) {
+                    deviceId = crypto.randomUUID();
+                } else {
+                    deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                        const r = (Math.random() * 16) | 0;
+                        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                        return v.toString(16);
+                    });
+                }
+                localStorage.setItem(DEVICE_ID_KEY, deviceId);
+            }
+            return deviceId;
+        }
+
+        async function resolveDeviceId() {
+            if (window.desktop?.license?.getDeviceId) {
+                try {
+                    return await window.desktop.license.getDeviceId();
+                } catch {
+                    return getOrCreateDeviceId();
+                }
+            }
+            return getOrCreateDeviceId();
+        }
+
+        async function resolveDeviceName() {
+            const isDesktop = !!window.desktop?.isElectron;
+            let label = isDesktop ? 'SIMAK Desktop' : 'SIMAK Web';
+            try {
+                if (window.desktop?.runtimeInfo) {
+                    const info = await window.desktop.runtimeInfo();
+                    if (info?.appVersion) {
+                        label += ` v${info.appVersion}`;
+                    }
+                }
+            } catch {
+                // Best-effort only.
+            }
+            const platform = navigator.platform || 'unknown';
+            return `${label} (${platform})`;
+        }
+
+        function setDeviceFields(deviceId, deviceName) {
+            const deviceIdInput = document.getElementById('device_id');
+            const deviceNameInput = document.getElementById('device_name');
+            if (deviceIdInput && deviceId) {
+                deviceIdInput.value = deviceId;
+            }
+            if (deviceNameInput && deviceName) {
+                deviceNameInput.value = deviceName;
+            }
+            if (deviceId) {
+                document.cookie = `simak_device_id=${deviceId}; path=/; max-age=31536000; SameSite=Lax`;
+            }
+            if (deviceName) {
+                document.cookie = `simak_device_name=${encodeURIComponent(deviceName)}; path=/; max-age=31536000; SameSite=Lax`;
+            }
+        }
 
         function togglePassword(inputId, btn) {
             const input = document.getElementById(inputId);
@@ -407,6 +472,10 @@
                     setTimeout(() => alert.remove(), 300);
                 }, 5000);
             });
+
+            Promise.all([resolveDeviceId(), resolveDeviceName()])
+                .then(([deviceId, deviceName]) => setDeviceFields(deviceId, deviceName))
+                .catch(() => setDeviceFields(getOrCreateDeviceId(), 'SIMAK Web'));
         });
 
         // Reset form state when navigating back

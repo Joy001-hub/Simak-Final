@@ -24,6 +24,44 @@ class LicenseController extends Controller
         Cookie::queue(Cookie::forget('simak_license'));
     }
 
+    private function queueDeviceCookie(string $deviceId): void
+    {
+        $minutes = 60 * 24 * 365; // 1 year
+        Cookie::queue(cookie('simak_device_id', $deviceId, $minutes));
+    }
+
+    private function resolveDeviceId(Request $request, LicenseService $licenseService): string
+    {
+        $deviceId = trim((string) $request->input('device_id', ''));
+        if ($deviceId !== '') {
+            $this->queueDeviceCookie($deviceId);
+            return $deviceId;
+        }
+
+        $cookieId = trim((string) $request->cookie('simak_device_id', ''));
+        if ($cookieId !== '') {
+            return $cookieId;
+        }
+
+        return $licenseService->getHardwareId();
+    }
+
+    private function resolveDeviceName(Request $request): ?string
+    {
+        $deviceName = trim((string) $request->input('device_name', ''));
+        if ($deviceName === '') {
+            $deviceName = trim((string) $request->cookie('simak_device_name', ''));
+        }
+        if ($deviceName === '') {
+            $deviceName = trim((string) $request->header('User-Agent', ''));
+        }
+        if ($deviceName === '') {
+            return null;
+        }
+
+        return substr($deviceName, 0, 120);
+    }
+
     public function showActivate(LicenseService $licenseService)
     {
         try {
@@ -66,9 +104,14 @@ class LicenseController extends Controller
 
             $email = trim($request->email);
             $password = $request->password;
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
+            $deviceName = $this->resolveDeviceName($request);
             $licenseKey = trim($request->license);
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
+            $deviceName = $this->resolveDeviceName($request);
 
-            $result = $licenseService->activate($email, $password, $licenseKey);
+            $result = $licenseService->activate($email, $password, $licenseKey, $deviceId);
 
             if ($result === null) {
                 Log::warning('[License] activation failed - server unreachable', [
@@ -91,12 +134,12 @@ class LicenseController extends Controller
             if ($isValid) {
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
                 $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
-                $hardwareId = $licenseService->getHardwareId();
 
                 $saved = $licenseService->saveLocalLicense([
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $hardwareId,
+                    'device_id' => $deviceId,
+                    'hardware_id' => $deviceId,
                     'email' => $email,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
@@ -119,7 +162,7 @@ class LicenseController extends Controller
                 try {
                     $tenantService = app(TenantService::class);
                     $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
-                    $tenantService->registerDevice($licenseKey, $hardwareId);
+                    $tenantService->registerDevice($licenseKey, $deviceId, $deviceName);
                 } catch (DeviceLimitExceededException $e) {
                     return redirect()->route('license.activate.form')
                         ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
@@ -130,6 +173,7 @@ class LicenseController extends Controller
                 session(['license_authenticated' => true]);
                 session(['license_user_email' => $email]);
                 $this->queueLicenseCookie($licenseKey);
+                $this->queueDeviceCookie($deviceId);
 
                 return redirect()->route('dashboard');
             }
@@ -170,13 +214,15 @@ class LicenseController extends Controller
 
             $licenseKey = trim($request->license);
             $local = $licenseService->loadLocalLicense();
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
+            $deviceName = $this->resolveDeviceName($request);
 
             if (!$local || empty($local['license_key'])) {
                 return redirect()->route('license.activate.form')
                     ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan aktivasi terlebih dahulu.']);
             }
 
-            $result = $licenseService->validateRemote($licenseKey);
+            $result = $licenseService->validateRemote($licenseKey, $deviceId);
 
             if ($result === null) {
                 return redirect()->route('license.activate.form')
@@ -190,12 +236,12 @@ class LicenseController extends Controller
             if ($isValid) {
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
                 $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
-                $hardwareId = $licenseService->getHardwareId();
 
                 $licenseService->saveLocalLicense([
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $hardwareId,
+                    'device_id' => $deviceId,
+                    'hardware_id' => $deviceId,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
@@ -206,7 +252,7 @@ class LicenseController extends Controller
                 try {
                     $tenantService = app(TenantService::class);
                     $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
-                    $tenantService->registerDevice($licenseKey, $hardwareId);
+                    $tenantService->registerDevice($licenseKey, $deviceId, $deviceName);
                 } catch (DeviceLimitExceededException $e) {
                     return redirect()->route('license.activate.form')
                         ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
@@ -216,6 +262,7 @@ class LicenseController extends Controller
 
                 Log::info('[License] login successful', ['license' => $licenseKey]);
                 $this->queueLicenseCookie($licenseKey);
+                $this->queueDeviceCookie($deviceId);
                 return redirect()->route('dashboard');
             }
 
@@ -253,7 +300,7 @@ class LicenseController extends Controller
                     ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan aktivasi terlebih dahulu.']);
             }
 
-            $result = $licenseService->validateRemoteWithAuth($email, $password, $licenseKey);
+            $result = $licenseService->validateRemoteWithAuth($email, $password, $licenseKey, $deviceId);
 
             if ($result === null) {
                 return redirect()->route('login')
@@ -280,12 +327,12 @@ class LicenseController extends Controller
                 $remember = $request->boolean('remember');
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
                 $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
-                $hardwareId = $licenseService->getHardwareId();
 
                 $licenseService->saveLocalLicense([
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $hardwareId,
+                    'device_id' => $deviceId,
+                    'hardware_id' => $deviceId,
                     'email' => $email,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
@@ -298,7 +345,7 @@ class LicenseController extends Controller
                 try {
                     $tenantService = app(TenantService::class);
                     $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
-                    $tenantService->registerDevice($licenseKey, $hardwareId);
+                    $tenantService->registerDevice($licenseKey, $deviceId, $deviceName);
                 } catch (DeviceLimitExceededException $e) {
                     return redirect()->route('login')
                         ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.'])
@@ -315,6 +362,7 @@ class LicenseController extends Controller
                     session(['persist_license' => true]);
                 }
                 $this->queueLicenseCookie($licenseKey);
+                $this->queueDeviceCookie($deviceId);
 
                 return redirect()->route('dashboard');
             }
@@ -354,7 +402,7 @@ class LicenseController extends Controller
                     ->withErrors(['msg' => 'Tidak ada lisensi yang tersimpan untuk direset.']);
             }
 
-            $result = $licenseService->resetRemote($email, $password, $licenseKey);
+            $result = $licenseService->resetRemote($email, $password, $licenseKey, $deviceId);
 
             if ($result === null) {
                 return redirect()->route('license.activate.form')
@@ -419,8 +467,9 @@ class LicenseController extends Controller
             $email = trim($request->email);
             $password = $request->password;
             $licenseKey = trim($request->license);
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
 
-            $resp = $licenseService->resetRemote($email, $password, $licenseKey);
+            $resp = $licenseService->resetRemote($email, $password, $licenseKey, $deviceId);
 
             if ($resp === null) {
                 return redirect()->route('license.activate.form')
@@ -457,7 +506,7 @@ class LicenseController extends Controller
         }
     }
 
-    public function revalidate(LicenseService $licenseService)
+    public function revalidate(Request $request, LicenseService $licenseService)
     {
         try {
             $info = $licenseService->loadLocalLicense();
@@ -468,13 +517,13 @@ class LicenseController extends Controller
             }
 
             $licenseKey = $info['license_key'];
-            $hardwareId = $info['hardware_id'] ?? $info['string'] ?? null;
-
-            if (!$hardwareId) {
-                $hardwareId = $licenseService->getHardwareId();
+            $deviceId = $info['device_id'] ?? $info['hardware_id'] ?? $info['string'] ?? null;
+            if (!$deviceId) {
+                $deviceId = $this->resolveDeviceId($request, $licenseService);
             }
+            $deviceName = $this->resolveDeviceName($request);
 
-            $resp = $licenseService->validateRemote($licenseKey, $hardwareId);
+            $resp = $licenseService->validateRemote($licenseKey, $deviceId);
 
             if ($resp === null) {
                 return redirect()->route('license.activate.form')
@@ -490,8 +539,9 @@ class LicenseController extends Controller
                 $licenseService->saveLocalLicense(array_merge($info, [
                     'license_key' => $licenseKey,
                     'status' => 'active',
-                    'hardware_id' => $hardwareId,
-                    'string' => $hardwareId,
+                    'device_id' => $deviceId,
+                    'hardware_id' => $deviceId,
+                    'string' => $deviceId,
                     'email' => $info['email'] ?? null,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
@@ -503,7 +553,7 @@ class LicenseController extends Controller
                 try {
                     $tenantService = app(TenantService::class);
                     $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
-                    $tenantService->registerDevice($licenseKey, $hardwareId);
+                    $tenantService->registerDevice($licenseKey, $deviceId, $deviceName);
                 } catch (DeviceLimitExceededException $e) {
                     return redirect()->route('license.activate.form')
                         ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);
@@ -561,7 +611,7 @@ class LicenseController extends Controller
         ]);
     }
 
-    public function checkUpgrade(LicenseService $licenseService)
+    public function checkUpgrade(Request $request, LicenseService $licenseService)
     {
         try {
             $local = $licenseService->loadLocalLicense();
@@ -572,8 +622,9 @@ class LicenseController extends Controller
                     ->withErrors(['msg' => 'Lisensi tidak ditemukan.']);
             }
 
-            $hardwareId = $licenseService->getHardwareId();
-            $resp = $licenseService->validateRemote($licenseKey, $hardwareId);
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
+            $deviceName = $this->resolveDeviceName($request);
+            $resp = $licenseService->validateRemote($licenseKey, $deviceId);
 
             if ($resp === null) {
                 return redirect()->route('license.upgrade')
@@ -585,7 +636,8 @@ class LicenseController extends Controller
             $licenseService->saveLocalLicense(array_merge($local, [
                 'license_key' => $licenseKey,
                 'status' => 'active',
-                'hardware_id' => $hardwareId,
+                'device_id' => $deviceId,
+                'hardware_id' => $deviceId,
                 'subscription_status' => $subscriptionStatus,
                 'subscription_expires_at' => $subscriptionExpiresAt,
                 'subscription_checked_at' => now()->toIso8601String(),
@@ -596,7 +648,7 @@ class LicenseController extends Controller
             try {
                 $tenantService = app(TenantService::class);
                 $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
-                $tenantService->registerDevice($licenseKey, $hardwareId);
+                $tenantService->registerDevice($licenseKey, $deviceId, $deviceName);
             } catch (DeviceLimitExceededException $e) {
                 return redirect()->route('license.upgrade')
                     ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.']);

@@ -31,12 +31,14 @@ class EnsureLicenseIsActive
                     if (is_array($resp) && $this->licenseService->isRemoteValid($resp, $rememberedKey, 'validate')) {
                         $subscriptionStatus = $this->licenseService->extractSubscriptionStatus($resp);
                         $subscriptionExpiresAt = $this->licenseService->extractSubscriptionExpirationDate($resp);
-                        $hardwareId = $license['hardware_id'] ?? $this->licenseService->getHardwareId();
+                        $deviceId = $this->resolveDeviceId($request, $license);
+                        $deviceName = $this->resolveDeviceName($request);
 
                         $this->licenseService->saveLocalLicense([
                             'license_key' => $rememberedKey,
                             'status' => 'active',
-                            'hardware_id' => $hardwareId,
+                            'device_id' => $deviceId,
+                            'hardware_id' => $deviceId,
                             'subscription_status' => $subscriptionStatus,
                             'subscription_expires_at' => $subscriptionExpiresAt,
                             'subscription_checked_at' => now()->toIso8601String(),
@@ -47,7 +49,7 @@ class EnsureLicenseIsActive
                         try {
                             $tenantService = app(TenantService::class);
                             $tenantService->ensureTenant($rememberedKey, $subscriptionStatus);
-                            $tenantService->registerDevice($rememberedKey, $hardwareId);
+                            $tenantService->registerDevice($rememberedKey, $deviceId, $deviceName);
                         } catch (DeviceLimitExceededException $e) {
                             Cookie::queue(Cookie::forget('simak_license'));
                             return redirect()->route('license.activate.form')
@@ -83,5 +85,44 @@ class EnsureLicenseIsActive
         }
 
         return $next($request);
+    }
+
+    private function resolveDeviceId(Request $request, ?array $license): string
+    {
+        $deviceId = trim((string) $request->input('device_id', ''));
+        if ($deviceId !== '') {
+            return $deviceId;
+        }
+
+        $cookieId = trim((string) $request->cookie('simak_device_id', ''));
+        if ($cookieId !== '') {
+            return $cookieId;
+        }
+
+        if (is_array($license)) {
+            $licenseId = $license['device_id'] ?? $license['hardware_id'] ?? $license['string'] ?? '';
+            $licenseId = is_string($licenseId) ? trim($licenseId) : '';
+            if ($licenseId !== '') {
+                return $licenseId;
+            }
+        }
+
+        return $this->licenseService->getHardwareId();
+    }
+
+    private function resolveDeviceName(Request $request): ?string
+    {
+        $deviceName = trim((string) $request->input('device_name', ''));
+        if ($deviceName === '') {
+            $deviceName = trim((string) $request->cookie('simak_device_name', ''));
+        }
+        if ($deviceName === '') {
+            $deviceName = trim((string) $request->header('User-Agent', ''));
+        }
+        if ($deviceName === '') {
+            return null;
+        }
+
+        return substr($deviceName, 0, 120);
     }
 }

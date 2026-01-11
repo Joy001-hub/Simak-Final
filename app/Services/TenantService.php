@@ -54,6 +54,13 @@ class TenantService
     {
         $tenantKey = $this->modeService->tenantKey($licenseKey);
         $tenant = DB::connection('pgsql')->table('tenants')->where('tenant_key', $tenantKey)->first();
+        $deviceName = is_string($deviceName) ? trim($deviceName) : null;
+        if ($deviceName === '') {
+            $deviceName = null;
+        }
+        if ($deviceName !== null) {
+            $deviceName = substr($deviceName, 0, 120);
+        }
 
         if (!$tenant) {
             $this->ensureTenant($licenseKey);
@@ -70,12 +77,17 @@ class TenantService
         if ($device) {
             $lastSeen = $device->last_seen_at ? Carbon::parse($device->last_seen_at) : null;
             if (!$lastSeen || $lastSeen->diffInMinutes(now()) >= 10) {
+                $payload = [
+                    'last_seen_at' => now(),
+                    'updated_at' => now(),
+                ];
+                if ($deviceName && empty($device->device_name)) {
+                    $payload['device_name'] = $deviceName;
+                }
+
                 DB::connection('pgsql')->table('tenant_devices')
                     ->where('id', $device->id)
-                    ->update([
-                        'last_seen_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    ->update($payload);
             }
             return;
         }
@@ -87,6 +99,26 @@ class TenantService
             ->count();
 
         $limit = (int) ($tenant->max_devices ?? $this->modeService->maxDevices($tenant->subscription_status ?? null));
+        if ($activeCount >= $limit && $deviceName) {
+            $legacy = DB::connection('pgsql')
+                ->table('tenant_devices')
+                ->where('tenant_key', $tenantKey)
+                ->whereNull('revoked_at')
+                ->whereNull('device_name')
+                ->orderBy('last_seen_at')
+                ->first();
+
+            if ($legacy) {
+                DB::connection('pgsql')->table('tenant_devices')
+                    ->where('id', $legacy->id)
+                    ->update([
+                        'revoked_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                $activeCount -= 1;
+            }
+        }
+
         if ($activeCount >= $limit) {
             throw new DeviceLimitExceededException('Batas perangkat tercapai.');
         }
