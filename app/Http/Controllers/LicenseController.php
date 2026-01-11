@@ -78,6 +78,7 @@ class LicenseController extends Controller
 
             if ($isValid) {
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
+                $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
                 $hardwareId = $licenseService->getHardwareId();
 
                 $saved = $licenseService->saveLocalLicense([
@@ -86,6 +87,7 @@ class LicenseController extends Controller
                     'hardware_id' => $hardwareId,
                     'email' => $email,
                     'subscription_status' => $subscriptionStatus,
+                    'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Registered via activation',
@@ -176,6 +178,7 @@ class LicenseController extends Controller
 
             if ($isValid) {
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
+                $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
                 $hardwareId = $licenseService->getHardwareId();
 
                 $licenseService->saveLocalLicense([
@@ -183,6 +186,7 @@ class LicenseController extends Controller
                     'status' => 'active',
                     'hardware_id' => $hardwareId,
                     'subscription_status' => $subscriptionStatus,
+                    'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Validated via login',
@@ -266,6 +270,7 @@ class LicenseController extends Controller
             if ($isValid) {
                 $remember = $request->boolean('remember');
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
+                $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
                 $hardwareId = $licenseService->getHardwareId();
 
                 $licenseService->saveLocalLicense([
@@ -274,6 +279,7 @@ class LicenseController extends Controller
                     'hardware_id' => $hardwareId,
                     'email' => $email,
                     'subscription_status' => $subscriptionStatus,
+                    'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Validated via auth login',
@@ -468,6 +474,7 @@ class LicenseController extends Controller
 
             if ($valid) {
                 $subscriptionStatus = $licenseService->extractSubscriptionStatus($resp);
+                $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($resp);
 
                 $licenseService->saveLocalLicense(array_merge($info, [
                     'license_key' => $licenseKey,
@@ -476,6 +483,7 @@ class LicenseController extends Controller
                     'string' => $hardwareId,
                     'email' => $info['email'] ?? null,
                     'subscription_status' => $subscriptionStatus,
+                    'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Revalidate successful',
@@ -514,6 +522,15 @@ class LicenseController extends Controller
         $local = $licenseService->loadLocalLicense();
         $licenseKey = $local['license_key'] ?? null;
         $subscriptionStatus = $local['subscription_status'] ?? null;
+        $subscriptionExpiresAt = $local['subscription_expires_at'] ?? null;
+        $subscriptionExpiresLabel = null;
+        if ($subscriptionExpiresAt) {
+            try {
+                $subscriptionExpiresLabel = \Carbon\Carbon::parse($subscriptionExpiresAt)->format('d/m/Y');
+            } catch (\Throwable $e) {
+                $subscriptionExpiresLabel = $subscriptionExpiresAt;
+            }
+        }
         $upgradeUrl = config('services.sejoli.upgrade_url');
         $addonUrl = config('services.sejoli.addon_url');
 
@@ -528,6 +545,7 @@ class LicenseController extends Controller
 
         return view('license.upgrade', [
             'subscriptionStatus' => $subscriptionStatus,
+            'subscriptionExpiresLabel' => $subscriptionExpiresLabel,
             'upgradeUrl' => $upgradeUrl,
             'addonUrl' => $addonUrl,
             'deviceStats' => $deviceStats,
@@ -554,11 +572,13 @@ class LicenseController extends Controller
             }
 
             $subscriptionStatus = $licenseService->extractSubscriptionStatus($resp);
+            $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($resp);
             $licenseService->saveLocalLicense(array_merge($local, [
                 'license_key' => $licenseKey,
                 'status' => 'active',
                 'hardware_id' => $hardwareId,
                 'subscription_status' => $subscriptionStatus,
+                'subscription_expires_at' => $subscriptionExpiresAt,
                 'subscription_checked_at' => now()->toIso8601String(),
                 'last_check_at' => now()->toIso8601String(),
                 'message' => 'Upgrade status refreshed',

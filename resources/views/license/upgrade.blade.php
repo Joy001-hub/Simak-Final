@@ -15,6 +15,13 @@
                 <p class="panel-sub" style="margin:4px 0 0;">
                     {{ $subscriptionStatus === 'active' ? 'Aktif (Premium)' : 'Belum aktif (Basic)' }}
                 </p>
+                @if (!empty($subscriptionExpiresLabel))
+                    <p class="hint" style="margin-top:6px;">
+                        Langganan diperpanjang hingga {{ $subscriptionExpiresLabel }}
+                    </p>
+                @elseif ($subscriptionStatus === 'active')
+                    <p class="hint" style="margin-top:6px;">Langganan aktif (tanpa tanggal berakhir).</p>
+                @endif
                 @if (config('license.upgrade_price'))
                     <p class="hint" style="margin-top:6px;">Harga: {{ config('license.upgrade_price') }}</p>
                 @endif

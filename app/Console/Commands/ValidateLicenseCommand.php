@@ -46,11 +46,13 @@ class ValidateLicenseCommand extends Command
             $isValid = $license->isRemoteValid($response, $key, 'validate');
             if ($isValid) {
                 $subscriptionStatus = $license->extractSubscriptionStatus($response);
+                $subscriptionExpiresAt = $license->extractSubscriptionExpirationDate($response);
                 $license->saveLocalLicense(array_merge($local, [
                     'license_key' => $key,
                     'status' => 'active',
                     'hardware_id' => $hardwareId,
                     'subscription_status' => $subscriptionStatus,
+                    'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
                     'last_check_at' => now()->toIso8601String(),
                     'message' => 'Weekly validation successful',

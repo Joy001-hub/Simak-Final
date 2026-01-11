@@ -385,6 +385,20 @@ class LicenseService
         return $payload['data']['subscription_status'] ?? null;
     }
 
+    public function extractSubscriptionExpirationDate(?array $payload): ?string
+    {
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        $date = $payload['data']['expiration_date'] ?? null;
+        if (is_string($date) && trim($date) !== '') {
+            return $date;
+        }
+
+        return null;
+    }
+
     public function isRemoteValid($payload, string $licenseKey, string $mode = 'validate'): bool
     {
         if (!is_array($payload)) {
