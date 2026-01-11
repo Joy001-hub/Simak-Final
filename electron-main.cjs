@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const devServerUrl = process.env.DEV_SERVER_URL || process.env.VITE_DEV_SERVER_URL || process.env.VITE_DEV_URL;
+const electronAppUrl = process.env.ELECTRON_APP_URL || process.env.APP_URL;
 
 // ==================== License Storage Helpers ====================
 
@@ -157,8 +158,15 @@ function createMainWindow() {
         mainWindow.loadURL(devServerUrl);
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     } else {
-        const indexPath = path.join(__dirname, 'public', 'build', 'index.html');
-        mainWindow.loadFile(indexPath);
+        if (electronAppUrl) {
+            const normalizedUrl = electronAppUrl.match(/^https?:\/\//)
+                ? electronAppUrl
+                : `https://${electronAppUrl}`;
+            mainWindow.loadURL(normalizedUrl);
+        } else {
+            const indexPath = path.join(__dirname, 'public', 'build', 'index.html');
+            mainWindow.loadFile(indexPath);
+        }
     }
 
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {

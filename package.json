@@ -6,6 +6,7 @@
     "description": "Kavling Management Pro - Web Application",
     "author": "",
     "type": "module",
+    "main": "electron-main.cjs",
     "scripts": {
         "build": "vite build",
         "build:web": "vite build",
