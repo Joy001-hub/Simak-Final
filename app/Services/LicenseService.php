@@ -334,12 +334,11 @@ class LicenseService
 
     private function resolveSejoliIdentifier(string $licenseKey, ?string $identifier = null): string
     {
-        if (is_string($identifier) && trim($identifier) !== '') {
-            return $identifier;
-        }
-
         $mode = strtolower((string) config('license.sejoli_identifier', 'shared'));
         if ($mode === 'hardware') {
+            if (is_string($identifier) && trim($identifier) !== '') {
+                return $identifier;
+            }
             return $this->getHardwareId();
         }
 
@@ -355,7 +354,7 @@ class LicenseService
     public function validateRemote(string $licenseKey, ?string $hardwareId = null): ?array
     {
         $sejoli = app(SejoliService::class);
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, $hardwareId);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, null);
         $primary = $sejoli->validateLicense($licenseKey, $identifier);
 
         if ($primary === null) {
@@ -366,8 +365,16 @@ class LicenseService
             return $primary;
         }
 
-        $fallback = $this->getHardwareId();
-        if ($fallback !== $identifier) {
+        $fallbacks = [];
+        if (is_string($hardwareId) && trim($hardwareId) !== '' && $hardwareId !== $identifier) {
+            $fallbacks[] = $hardwareId;
+        }
+        $legacy = $this->getHardwareId();
+        if ($legacy !== $identifier && $legacy !== ($fallbacks[0] ?? null)) {
+            $fallbacks[] = $legacy;
+        }
+
+        foreach ($fallbacks as $fallback) {
             $secondary = $sejoli->validateLicense($licenseKey, $fallback);
             if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'validate')) {
                 return $secondary;
@@ -380,7 +387,7 @@ class LicenseService
     public function validateRemoteWithAuth(string $email, string $password, string $licenseKey, ?string $hardwareId = null): ?array
     {
         $sejoli = app(SejoliService::class);
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, $hardwareId);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, null);
         $primary = $sejoli->validateLicenseWithAuth($email, $password, $licenseKey, $identifier);
 
         if ($primary === null) {
@@ -391,8 +398,16 @@ class LicenseService
             return $primary;
         }
 
-        $fallback = $this->getHardwareId();
-        if ($fallback !== $identifier) {
+        $fallbacks = [];
+        if (is_string($hardwareId) && trim($hardwareId) !== '' && $hardwareId !== $identifier) {
+            $fallbacks[] = $hardwareId;
+        }
+        $legacy = $this->getHardwareId();
+        if ($legacy !== $identifier && $legacy !== ($fallbacks[0] ?? null)) {
+            $fallbacks[] = $legacy;
+        }
+
+        foreach ($fallbacks as $fallback) {
             $secondary = $sejoli->validateLicenseWithAuth($email, $password, $licenseKey, $fallback);
             if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'validate')) {
                 return $secondary;
@@ -405,7 +420,7 @@ class LicenseService
     public function resetRemote(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
         $sejoli = app(SejoliService::class);
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, $deviceId);
+        $identifier = $this->resolveSejoliIdentifier($licenseKey, null);
         $primary = $sejoli->resetLicense($email, $password, $licenseKey, $identifier);
 
         if ($primary === null) {
@@ -416,8 +431,16 @@ class LicenseService
             return $primary;
         }
 
-        $fallback = $this->getHardwareId();
-        if ($fallback !== $identifier) {
+        $fallbacks = [];
+        if (is_string($deviceId) && trim($deviceId) !== '' && $deviceId !== $identifier) {
+            $fallbacks[] = $deviceId;
+        }
+        $legacy = $this->getHardwareId();
+        if ($legacy !== $identifier && $legacy !== ($fallbacks[0] ?? null)) {
+            $fallbacks[] = $legacy;
+        }
+
+        foreach ($fallbacks as $fallback) {
             $secondary = $sejoli->resetLicense($email, $password, $licenseKey, $fallback);
             if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'reset')) {
                 return $secondary;
