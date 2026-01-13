@@ -221,13 +221,6 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="license_key">License Key</label>
-                        <input type="text" name="license_key" id="license_key" required autocomplete="off"
-                            class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none uppercase"
-                            placeholder="LISENSI-XXXX-XXXX" value="{{ old('license_key', $licenseKey ?? '') }}">
-                    </div>
-
                     <button type="submit" id="submit-btn"
                         class="btn-primary w-full text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2">
                         <span id="btn-text">Reset Lisensi</span>

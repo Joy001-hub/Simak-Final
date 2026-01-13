@@ -13,23 +13,11 @@ use App\Http\Controllers\DataManagementController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Middleware\EnsureLicenseIsActive;
 Route::get('/login', function () {
-    $licenseService = app(\App\Services\LicenseService::class);
-    $local = $licenseService->loadLocalLicense();
-    $licenseKey = $local['license_key'] ?? request()->cookie('simak_license');
-
-    return view('auth.login', [
-        'licenseKey' => $licenseKey,
-    ]);
+    return view('auth.login');
 })->name('login');
 Route::post('/login', [LicenseController::class, 'processAuthLogin'])->name('auth.login');
 Route::get('/reset', function () {
-    $licenseService = app(\App\Services\LicenseService::class);
-    $local = $licenseService->loadLocalLicense();
-    $licenseKey = $local['license_key'] ?? request()->cookie('simak_license');
-
-    return view('auth.resetpage', [
-        'licenseKey' => $licenseKey,
-    ]);
+    return view('auth.resetpage');
 })->name('reset');
 Route::post('/reset', [LicenseController::class, 'processAuthReset'])->name('auth.reset');
 Route::get('/activate', [LicenseController::class, 'showActivate'])->name('license.activate.form');
