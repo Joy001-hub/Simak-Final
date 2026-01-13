@@ -294,10 +294,13 @@ class LicenseController extends Controller
 
             $local = $licenseService->loadLocalLicense();
             $licenseKey = $local['license_key'] ?? $request->cookie('simak_license');
+            if (!$licenseKey) {
+                $licenseKey = trim((string) $request->input('license_key', ''));
+            }
 
             if (!$licenseKey) {
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan aktivasi terlebih dahulu.']);
+                    ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan masukkan license key Anda.']);
             }
 
             $deviceId = $this->resolveDeviceId($request, $licenseService);
@@ -398,10 +401,13 @@ class LicenseController extends Controller
 
             $local = $licenseService->loadLocalLicense();
             $licenseKey = $local['license_key'] ?? $request->cookie('simak_license');
+            if (!$licenseKey) {
+                $licenseKey = trim((string) $request->input('license_key', ''));
+            }
 
             if (!$licenseKey) {
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Tidak ada lisensi yang tersimpan untuk direset.']);
+                    ->withErrors(['msg' => 'Lisensi tidak ditemukan. Silakan masukkan license key Anda.']);
             }
 
             $deviceId = $this->resolveDeviceId($request, $licenseService);

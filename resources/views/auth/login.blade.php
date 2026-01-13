@@ -321,6 +321,13 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="license_key">License Key</label>
+                        <input type="text" name="license_key" id="license_key" required autocomplete="off"
+                            class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none uppercase"
+                            placeholder="LISENSI-XXXX-XXXX" value="{{ old('license_key', $licenseKey ?? '') }}">
+                    </div>
+
                     {{-- Remember Session Checkbox --}}
                     <div class="flex items-center gap-2">
                         <label class="custom-checkbox">

@@ -16,18 +16,20 @@ Route::get('/login', function () {
     $licenseService = app(\App\Services\LicenseService::class);
     $local = $licenseService->loadLocalLicense();
     $licenseKey = $local['license_key'] ?? request()->cookie('simak_license');
-    if (!$licenseKey) {
-        return redirect()->route('license.activate.form')->withErrors(['msg' => 'File lisensi tidak ditemukan. Silakan aktivasi lisensi baru.']);
-    }
-    return view('auth.login');
+
+    return view('auth.login', [
+        'licenseKey' => $licenseKey,
+    ]);
 })->name('login');
 Route::post('/login', [LicenseController::class, 'processAuthLogin'])->name('auth.login');
 Route::get('/reset', function () {
     $licenseService = app(\App\Services\LicenseService::class);
     $local = $licenseService->loadLocalLicense();
-    if (!$local || empty($local['license_key'])) {
-        return redirect()->route('license.activate.form')->withErrors(['msg' => 'Tidak ada lisensi yang tersimpan. Silakan aktivasi terlebih dahulu.']);
-    }return view('auth.resetpage');
+    $licenseKey = $local['license_key'] ?? request()->cookie('simak_license');
+
+    return view('auth.resetpage', [
+        'licenseKey' => $licenseKey,
+    ]);
 })->name('reset');
 Route::post('/reset', [LicenseController::class, 'processAuthReset'])->name('auth.reset');
 Route::get('/activate', [LicenseController::class, 'showActivate'])->name('license.activate.form');
