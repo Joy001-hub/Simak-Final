@@ -61,13 +61,13 @@ return [
     ],
 
     'batching' => [
-        'database' => env('DB_CONNECTION', 'sqlite'),
+        'database' => env('DB_CONNECTION', 'pgsql'),
         'table' => 'job_batches',
     ],
 
     'failed' => [
         'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
-        'database' => env('DB_CONNECTION', 'sqlite'),
+        'database' => env('DB_CONNECTION', 'pgsql'),
         'table' => 'failed_jobs',
     ],
 ];

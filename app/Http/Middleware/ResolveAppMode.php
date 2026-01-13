@@ -13,9 +13,9 @@ class ResolveAppMode
     public function handle(Request $request, Closure $next): Response
     {
         $modeService = app(AppModeService::class);
-        $state = $modeService->resolve();
+        $modeService->resolve();
 
-        $connection = $state['mode'] === AppModeService::MODE_CLOUD ? 'pgsql' : 'sqlite';
+        $connection = 'pgsql';
 
         config([
             'database.default' => $connection,

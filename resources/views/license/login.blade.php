@@ -20,7 +20,7 @@
                      onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
                      style="width:120px; height:auto;">
                 <h1 class="text-2xl font-bold text-slate-900">Login</h1>
-                <p class="text-sm text-slate-600 mt-2">Masukkan license key Anda untuk melanjutkan.</p>
+                <p class="text-sm text-slate-600 mt-2">Masukkan User ID &amp; Product ID Anda untuk melanjutkan.</p>
             </div>
 
             @if (session('success'))
@@ -35,15 +35,23 @@
             @endif
 
             {{-- Form --}}
-            <form action="{{ route('license.login') }}" method="POST" class="px-8 py-8 space-y-5">
+            <form action="{{ route('auth.login') }}" method="POST" class="px-8 py-8 space-y-5">
                 @csrf
                 <input type="hidden" name="device_id" id="device_id">
                 <input type="hidden" name="device_name" id="device_name">
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="license">License Key</label>
-                    <input type="text" name="license" id="license" required autocomplete="off"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition uppercase"
-                        placeholder="LISENSI-XXXX-XXXX" value="{{ old('license') }}">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="user_id">User ID</label>
+                    <input type="number" name="user_id" id="user_id" required inputmode="numeric" autofocus
+                        class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                        placeholder="Masukkan User ID" value="{{ old('user_id') }}">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2" for="product_id">Product ID</label>
+                    <input type="number" name="product_id" id="product_id" required inputmode="numeric"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                        placeholder="Masukkan Product ID" value="{{ old('product_id') }}">
+                    <p class="mt-2 text-xs text-slate-500">Gunakan User ID &amp; Product ID dari Sejoli External API.</p>
                 </div>
 
                 <button type="submit"

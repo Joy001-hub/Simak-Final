@@ -29,6 +29,7 @@ Route::get('/license/locked', [LicenseController::class, 'locked'])->name('licen
 Route::get('/logout', function () {
     session()->forget('license_authenticated');
     session()->forget('license_user_email');
+    session()->forget('license_key');
     session()->invalidate();
     session()->regenerateToken();
     return redirect()->route('login');

@@ -27,11 +27,6 @@ if ($isProductionBuild && getenv('APPDATA')) {
         @mkdir($nativeStorage . DIRECTORY_SEPARATOR . 'logs', 0755, true);
     }
 
-    $dbPath = $nativeStorage . DIRECTORY_SEPARATOR . 'database.sqlite';
-    if (!file_exists($dbPath)) {
-        @touch($dbPath);
-    }
-
     putenv("NATIVEPHP_STORAGE_PATH={$nativeStorage}");
     $_ENV['NATIVEPHP_STORAGE_PATH'] = $nativeStorage;
     $_SERVER['NATIVEPHP_STORAGE_PATH'] = $nativeStorage;

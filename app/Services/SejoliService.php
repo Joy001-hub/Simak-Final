@@ -10,10 +10,12 @@ use Illuminate\Http\Client\PendingRequest;
 class SejoliService
 {
     protected string $baseUrl = 'https://kavling.pro';
+    protected ?string $apiKey = null;
 
     public function __construct()
     {
         $this->baseUrl = rtrim(config('services.sejoli.base_url', $this->baseUrl), '/');
+        $this->apiKey = config('services.sejoli.api_key');
     }
 
     private function http(): PendingRequest
@@ -23,7 +25,7 @@ class SejoliService
             $curlOptions[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;
         }
 
-        return Http::withOptions([
+        $request = Http::withOptions([
             'verify' => false,
             'curl' => $curlOptions,
         ])
@@ -31,6 +33,109 @@ class SejoliService
             ->connectTimeout(8)
             ->timeout(20)
             ->retry(1, 1500, throw: false);
+
+        if (is_string($this->apiKey) && trim($this->apiKey) !== '') {
+            $request = $request->withToken(trim($this->apiKey));
+        }
+
+        return $request;
+    }
+
+    private function ensureApiKey(): bool
+    {
+        if (!is_string($this->apiKey) || trim($this->apiKey) === '') {
+            Log::error('[Sejoli] API key belum di-set (SEJOLI_API_KEY).');
+            return false;
+        }
+
+        return true;
+    }
+
+    public function getSubscriptions(int|string $userId): ?array
+    {
+        if (!$this->ensureApiKey()) {
+            return null;
+        }
+
+        try {
+            $response = $this->http()->get($this->baseUrl . '/wp-json/sejoli/v1/subscription/' . $userId);
+            $body = $response->json();
+
+            Log::info('[Sejoli] Subscription list response', [
+                'user_id' => $userId,
+                'status' => $response->status(),
+                'body' => $body,
+            ]);
+
+            return $response->successful() ? $body : null;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::warning('[Sejoli] Subscription list connection failed: ' . $e->getMessage());
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('[Sejoli] Subscription list failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function validateSubscription(int|string $userId, int|string $productId): ?array
+    {
+        if (!$this->ensureApiKey()) {
+            return null;
+        }
+
+        try {
+            $payload = [
+                'user_id' => (int) $userId,
+                'product_id' => (int) $productId,
+            ];
+
+            $response = $this->http()
+                ->asJson()
+                ->post($this->baseUrl . '/wp-json/sejoli/v1/subscription/validate', $payload);
+
+            $body = $response->json();
+
+            Log::info('[Sejoli] Validate response', [
+                'user_id' => $userId,
+                'product_id' => $productId,
+                'status' => $response->status(),
+                'body' => $body,
+            ]);
+
+            return $response->successful() ? $body : null;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::warning('[Sejoli] Validate connection failed: ' . $e->getMessage());
+            return null;
+        } catch (\Throwable $e) {
+            Log::warning('[Sejoli] Validate failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function getSubscriptionByOrder(int|string $orderId): ?array
+    {
+        if (!$this->ensureApiKey()) {
+            return null;
+        }
+
+        try {
+            $response = $this->http()->get($this->baseUrl . '/wp-json/sejoli/v1/subscription/order/' . $orderId);
+            $body = $response->json();
+
+            Log::info('[Sejoli] Subscription order response', [
+                'order_id' => $orderId,
+                'status' => $response->status(),
+                'body' => $body,
+            ]);
+
+            return $response->successful() ? $body : null;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::warning('[Sejoli] Subscription order connection failed: ' . $e->getMessage());
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('[Sejoli] Subscription order failed: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function getHardwareID(): string
@@ -70,118 +175,5 @@ class SejoliService
             Log::warning('[SejoliService] HWID error: ' . $e->getMessage());
         }
         return null;
-    }
-
-    public function registerLicense(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
-    {
-        try {
-            $deviceId = $deviceId ?: $this->getHardwareID();
-            $requestData = [
-                'user_email' => trim($email),
-                'user_pass' => $password,
-                'license' => trim($licenseKey),
-                'string' => $deviceId,
-            ];
-
-            Log::info('[Sejoli] Register request', [
-                'url' => $this->baseUrl . '/sejoli-license/',
-                'email' => $email,
-                'license' => $licenseKey,
-                'hardware_id' => $requestData['string'],
-            ]);
-
-            $response = $this->http()->asForm()->post($this->baseUrl . '/sejoli-license/', $requestData);
-            $body = $response->json();
-
-            Log::info('[Sejoli] Register response', [
-                'status' => $response->status(),
-                'body' => $body,
-            ]);
-
-            return $response->successful() ? $body : null;
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::warning('[Sejoli] Register connection failed: ' . $e->getMessage());
-            return null;
-        } catch (\Throwable $e) {
-            Log::error('[Sejoli] Register failed: ' . $e->getMessage());
-            return null;
-        }
-    }
-
-    public function validateLicense(string $licenseKey, ?string $hardwareId = null, ?string $token = null, ?string $email = null, ?string $password = null): ?array
-    {
-        try {
-            $string = $hardwareId ?: $this->getHardwareID();
-            $http = $this->http()->asForm();
-
-            if ($token) {
-                $http = $http->withToken($token);
-            }
-
-            $requestData = ['string' => $string];
-
-            if ($email && $password) {
-                $requestData['user_email'] = trim($email);
-                $requestData['user_pass'] = $password;
-            }
-
-            $response = $http->post($this->baseUrl . '/sejoli-validate-license/', $requestData);
-            $body = $response->json();
-
-            Log::info('[Sejoli] Validate response', [
-                'license' => $licenseKey,
-                'has_credentials' => !empty($email),
-                'status' => $response->status(),
-                'body' => $body,
-            ]);
-
-            return $response->successful() ? $body : null;
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::warning('[Sejoli] Validate connection failed: ' . $e->getMessage());
-            return null;
-        } catch (\Throwable $e) {
-            Log::warning('[Sejoli] Validate failed (network issue?): ' . $e->getMessage());
-            return null;
-        }
-    }
-
-    public function validateLicenseWithAuth(string $email, string $password, string $licenseKey, ?string $hardwareId = null): ?array
-    {
-        return $this->validateLicense($licenseKey, $hardwareId, null, $email, $password);
-    }
-
-    public function resetLicense(string $email, string $password, string $licenseKey, ?string $deviceId = null, ?string $token = null): ?array
-    {
-        try {
-            $http = $this->http()->asForm();
-
-            if ($token) {
-                $http = $http->withToken($token);
-            }
-
-            $deviceId = $deviceId ?: $this->getHardwareID();
-            $response = $http->post($this->baseUrl . '/sejoli-delete-license/', [
-                'user_email' => trim($email),
-                'user_pass' => $password,
-                'license' => trim($licenseKey),
-                'string' => $deviceId,
-            ]);
-
-            $body = $response->json();
-
-            Log::info('[Sejoli] Reset response', [
-                'license' => $licenseKey,
-                'status' => $response->status(),
-                'body' => $body,
-            ]);
-
-            return $response->successful() ? $body : null;
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::warning('[Sejoli] Reset connection failed: ' . $e->getMessage());
-            return null;
-        } catch (\Throwable $e) {
-            Log::error('[Sejoli] Reset failed: ' . $e->getMessage());
-            return null;
-        }
     }
 }

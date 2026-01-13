@@ -257,7 +257,7 @@
                         onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
                         style="width: 160px; height: auto;">
                     <h1 class="text-2xl font-bold text-slate-900 mb-2">Login</h1>
-                    <p class="text-slate-500 text-sm">Masuk untuk mengelola akun dan lisensi Anda.</p>
+                    <p class="text-slate-500 text-sm">Masuk untuk mengelola akun dan subscription Anda.</p>
                 </div>
 
                 {{-- Alert Messages --}}
@@ -296,29 +296,18 @@
                 <input type="hidden" name="device_name" id="device_name">
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="email">Email</label>
-                        <input type="email" name="email" id="email" required autocomplete="email" autofocus
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="user_id">User ID</label>
+                        <input type="number" name="user_id" id="user_id" required inputmode="numeric" autofocus
                             class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
-                            placeholder="Masukkan email" value="{{ old('email') }}">
+                            placeholder="Masukkan User ID" value="{{ old('user_id') }}">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="password">Password</label>
-                        <div class="relative">
-                            <input type="password" name="password" id="password" required
-                                autocomplete="current-password"
-                                class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none pr-12"
-                                placeholder="Masukkan password">
-                            <button type="button" onclick="togglePassword('password', this)"
-                                class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </button>
-                        </div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="product_id">Product ID</label>
+                        <input type="number" name="product_id" id="product_id" required inputmode="numeric"
+                            class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
+                            placeholder="Masukkan Product ID" value="{{ old('product_id') }}">
+                        <p class="mt-2 text-xs text-slate-400">Gunakan User ID &amp; Product ID dari Sejoli External API.</p>
                     </div>
 
                     {{-- Remember Session Checkbox --}}
@@ -332,7 +321,7 @@
                                 </svg>
                             </span>
                         </label>
-                        <span class="text-sm text-slate-600">Ingat sesi & password</span>
+                        <span class="text-sm text-slate-600">Ingat sesi</span>
                         <div class="tooltip">
                             <svg class="w-4 h-4 text-slate-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
@@ -340,10 +329,8 @@
                                     clip-rule="evenodd" />
                             </svg>
                             <span class="tooltip-text">
-                                <strong>Dicentang:</strong> Sesi diingat, login otomatis pada pembukaan
-                                berikutnya.<br><br>
-                                <strong>Tidak dicentang:</strong> Sesi tidak disimpan, logout akan selalu menghapus
-                                data.
+                                <strong>Dicentang:</strong> Sesi diingat, login otomatis pada pembukaan berikutnya.<br><br>
+                                <strong>Tidak dicentang:</strong> Sesi tidak disimpan dan akan diminta aktivasi/login ulang.
                             </span>
                         </div>
                     </div>
@@ -362,12 +349,8 @@
 
                     <div class="text-center mt-6 space-y-3">
                         <p class="text-sm text-slate-500">
-                            <a href="https://kavling.pro/wp-login.php?action=lostpassword" target="_blank"
-                                class="text-[#b91c3b] font-semibold hover:underline">Lupa password?</a>
-                        </p>
-                        <p class="text-sm text-slate-500">
-                            Mengalami masalah lisensi? <a href="{{ route('reset') }}"
-                                class="text-[#b91c3b] font-semibold hover:underline">Reset Lisensi</a>
+                            Mengalami masalah subscription? <a href="{{ route('reset') }}"
+                                class="text-[#b91c3b] font-semibold hover:underline">Reset Aktivasi</a>
                         </p>
                     </div>
                 </form>
@@ -450,22 +433,6 @@
             }
             if (deviceName) {
                 document.cookie = `simak_device_name=${encodeURIComponent(deviceName)}; path=/; max-age=31536000; SameSite=Lax`;
-            }
-        }
-
-        function togglePassword(inputId, btn) {
-            const input = document.getElementById(inputId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                </svg>`;
-            } else {
-                input.type = 'password';
-                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                </svg>`;
             }
         }
 
@@ -579,7 +546,7 @@
 
         // Auto-focus first field
         document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('email').focus();
+            document.getElementById('user_id').focus();
 
             // Auto-hide alerts
             const alerts = document.querySelectorAll('[role="alert"]');

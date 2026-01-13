@@ -332,122 +332,90 @@ class LicenseService
         return hash('sha256', $salt . '|' . $licenseKey);
     }
 
-    private function resolveSejoliIdentifier(string $licenseKey, ?string $identifier = null): string
+    public function buildLicenseKey(int|string $userId, int|string $productId): string
     {
-        $mode = strtolower((string) config('license.sejoli_identifier', 'shared'));
-        if ($mode === 'hardware') {
-            if (is_string($identifier) && trim($identifier) !== '') {
-                return $identifier;
-            }
-            return $this->getHardwareId();
-        }
-
-        return $this->sharedIdentifier($licenseKey);
+        $userId = trim((string) $userId);
+        $productId = trim((string) $productId);
+        return 'SEJOLI-' . $userId . '-' . $productId;
     }
 
-    public function activate(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
+    public function parseLicenseKey(string $licenseKey): ?array
     {
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, $deviceId);
-        return app(SejoliService::class)->registerLicense($email, $password, $licenseKey, $identifier);
+        $key = trim($licenseKey);
+        if ($key === '') {
+            return null;
+        }
+
+        if (preg_match('/^SEJOLI-(\d+)-(\d+)$/', $key, $matches)) {
+            return [
+                'user_id' => (int) $matches[1],
+                'product_id' => (int) $matches[2],
+            ];
+        }
+
+        if (preg_match('/^(\d+):(\d+)$/', $key, $matches)) {
+            return [
+                'user_id' => (int) $matches[1],
+                'product_id' => (int) $matches[2],
+            ];
+        }
+
+        return null;
+    }
+
+    private function resolveSubscriptionIdentifiers(?string $licenseKey = null, ?array $license = null): ?array
+    {
+        if (is_string($licenseKey) && trim($licenseKey) !== '') {
+            $parsed = $this->parseLicenseKey($licenseKey);
+            if ($parsed) {
+                return $parsed;
+            }
+        }
+
+        if (!$license) {
+            $license = $this->loadLocalLicense();
+        }
+
+        if (is_array($license)) {
+            $userId = $license['sejoli_user_id'] ?? null;
+            $productId = $license['sejoli_product_id'] ?? null;
+            if ($userId && $productId) {
+                return [
+                    'user_id' => (int) $userId,
+                    'product_id' => (int) $productId,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    public function activate(int|string $userId, int|string $productId): ?array
+    {
+        return app(SejoliService::class)->validateSubscription($userId, $productId);
     }
 
     public function validateRemote(string $licenseKey, ?string $hardwareId = null): ?array
     {
-        $sejoli = app(SejoliService::class);
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, null);
-        $primary = $sejoli->validateLicense($licenseKey, $identifier);
-
-        if ($primary === null) {
+        $identifiers = $this->resolveSubscriptionIdentifiers($licenseKey);
+        if (!$identifiers) {
             return null;
         }
 
-        if ($this->isRemoteValid($primary, $licenseKey, 'validate')) {
-            return $primary;
-        }
-
-        $fallbacks = [];
-        if (is_string($hardwareId) && trim($hardwareId) !== '' && $hardwareId !== $identifier) {
-            $fallbacks[] = $hardwareId;
-        }
-        $legacy = $this->getHardwareId();
-        if ($legacy !== $identifier && $legacy !== ($fallbacks[0] ?? null)) {
-            $fallbacks[] = $legacy;
-        }
-
-        foreach ($fallbacks as $fallback) {
-            $secondary = $sejoli->validateLicense($licenseKey, $fallback);
-            if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'validate')) {
-                return $secondary;
-            }
-        }
-
-        return $primary;
+        return app(SejoliService::class)->validateSubscription(
+            $identifiers['user_id'],
+            $identifiers['product_id']
+        );
     }
 
     public function validateRemoteWithAuth(string $email, string $password, string $licenseKey, ?string $hardwareId = null): ?array
     {
-        $sejoli = app(SejoliService::class);
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, null);
-        $primary = $sejoli->validateLicenseWithAuth($email, $password, $licenseKey, $identifier);
-
-        if ($primary === null) {
-            return null;
-        }
-
-        if ($this->isRemoteValid($primary, $licenseKey, 'validate')) {
-            return $primary;
-        }
-
-        $fallbacks = [];
-        if (is_string($hardwareId) && trim($hardwareId) !== '' && $hardwareId !== $identifier) {
-            $fallbacks[] = $hardwareId;
-        }
-        $legacy = $this->getHardwareId();
-        if ($legacy !== $identifier && $legacy !== ($fallbacks[0] ?? null)) {
-            $fallbacks[] = $legacy;
-        }
-
-        foreach ($fallbacks as $fallback) {
-            $secondary = $sejoli->validateLicenseWithAuth($email, $password, $licenseKey, $fallback);
-            if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'validate')) {
-                return $secondary;
-            }
-        }
-
-        return $primary;
+        return $this->validateRemote($licenseKey, $hardwareId);
     }
 
     public function resetRemote(string $email, string $password, string $licenseKey, ?string $deviceId = null): ?array
     {
-        $sejoli = app(SejoliService::class);
-        $identifier = $this->resolveSejoliIdentifier($licenseKey, null);
-        $primary = $sejoli->resetLicense($email, $password, $licenseKey, $identifier);
-
-        if ($primary === null) {
-            return null;
-        }
-
-        if ($this->isRemoteValid($primary, $licenseKey, 'reset')) {
-            return $primary;
-        }
-
-        $fallbacks = [];
-        if (is_string($deviceId) && trim($deviceId) !== '' && $deviceId !== $identifier) {
-            $fallbacks[] = $deviceId;
-        }
-        $legacy = $this->getHardwareId();
-        if ($legacy !== $identifier && $legacy !== ($fallbacks[0] ?? null)) {
-            $fallbacks[] = $legacy;
-        }
-
-        foreach ($fallbacks as $fallback) {
-            $secondary = $sejoli->resetLicense($email, $password, $licenseKey, $fallback);
-            if ($secondary && $this->isRemoteValid($secondary, $licenseKey, 'reset')) {
-                return $secondary;
-            }
-        }
-
-        return $primary;
+        return $this->validateRemote($licenseKey, $deviceId);
     }
 
     public function messageContains($payload, string|array $needles): bool
@@ -490,6 +458,32 @@ class LicenseService
         if (!is_array($payload)) {
             return null;
         }
+        $subscription = $payload['data']['subscription'] ?? null;
+        if (is_array($subscription)) {
+            $status = $subscription['status'] ?? null;
+            if (is_string($status) && trim($status) !== '') {
+                return $status;
+            }
+        }
+
+        $subscriptions = $payload['data']['subscriptions'] ?? null;
+        if (is_array($subscriptions) && !empty($subscriptions)) {
+            $first = reset($subscriptions);
+            if (is_array($first)) {
+                $status = $first['status'] ?? null;
+                if (is_string($status) && trim($status) !== '') {
+                    return $status;
+                }
+            }
+        }
+
+        $hasAccess = $payload['data']['has_access'] ?? null;
+        if ($hasAccess === true) {
+            return 'active';
+        }
+        if ($hasAccess === false) {
+            return 'inactive';
+        }
 
         return $payload['data']['subscription_status'] ?? null;
     }
@@ -498,6 +492,24 @@ class LicenseService
     {
         if (!is_array($payload)) {
             return null;
+        }
+        $subscription = $payload['data']['subscription'] ?? null;
+        if (is_array($subscription)) {
+            $date = $subscription['end_date'] ?? $subscription['expiration_date'] ?? null;
+            if (is_string($date) && trim($date) !== '') {
+                return $date;
+            }
+        }
+
+        $subscriptions = $payload['data']['subscriptions'] ?? null;
+        if (is_array($subscriptions) && !empty($subscriptions)) {
+            $first = reset($subscriptions);
+            if (is_array($first)) {
+                $date = $first['end_date'] ?? $first['expiration_date'] ?? null;
+                if (is_string($date) && trim($date) !== '') {
+                    return $date;
+                }
+            }
         }
 
         $date = $payload['data']['expiration_date'] ?? null;
@@ -513,37 +525,44 @@ class LicenseService
         if (!is_array($payload)) {
             return false;
         }
-
-        $validFlag = filter_var($payload['valid'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $validFlag = filter_var($payload['success'] ?? ($payload['valid'] ?? false), FILTER_VALIDATE_BOOLEAN);
 
         switch ($mode) {
             case 'activate':
                 if ($validFlag) {
-                    return true;
-                }
-                $message = $payload['message'] ?? '';
-                return stripos($message, 'is registered to') !== false ||
-                    stripos($message, 'Aktivasi berhasil') !== false;
-
-            case 'reset':
-                if ($validFlag) {
-                    return true;
-                }
-                $message = $payload['message'] ?? '';
-                return stripos($message, 'telah dihapus') !== false ||
-                    stripos($message, 'Reset lisensi berhasil') !== false;
-
-            case 'validate':
-            default:
-                if ($validFlag) {
-                    $data = $payload['data'] ?? [];
-                    $subscriptionStatus = $data['subscription_status'] ?? 'active';
-                    if ($subscriptionStatus === 'expired') {
+                    $hasAccess = $payload['data']['has_access'] ?? null;
+                    if ($hasAccess === false) {
+                        return false;
+                    }
+                    $status = $payload['data']['subscription']['status'] ?? null;
+                    if (is_string($status) && strtolower($status) === 'expired') {
                         return false;
                     }
                     return true;
                 }
                 return false;
+
+            case 'reset':
+                return $validFlag;
+
+            case 'validate':
+            default:
+                if (!$validFlag) {
+                    return false;
+                }
+
+                $data = $payload['data'] ?? [];
+                $hasAccess = $data['has_access'] ?? null;
+                if ($hasAccess === false) {
+                    return false;
+                }
+
+                $subscriptionStatus = $data['subscription']['status'] ?? $data['subscription_status'] ?? null;
+                if (is_string($subscriptionStatus) && strtolower($subscriptionStatus) === 'expired') {
+                    return false;
+                }
+
+                return true;
         }
     }
 

@@ -28,8 +28,12 @@ trait HasTenantKey
 
             $context = app(TenantContext::class);
             $tenantKey = $context->getTenantKey();
-            if ($context->isCloud() && $tenantKey) {
-                $builder->where($builder->getModel()->getTable() . '.tenant_key', $tenantKey);
+            if ($context->isCloud()) {
+                if ($tenantKey) {
+                    $builder->where($builder->getModel()->getTable() . '.tenant_key', $tenantKey);
+                } else {
+                    $builder->whereRaw('1=0');
+                }
             }
         });
     }

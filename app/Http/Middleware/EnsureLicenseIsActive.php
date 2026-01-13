@@ -33,12 +33,15 @@ class EnsureLicenseIsActive
                         $subscriptionExpiresAt = $this->licenseService->extractSubscriptionExpirationDate($resp);
                         $deviceId = $this->resolveDeviceId($request, $license);
                         $deviceName = $this->resolveDeviceName($request);
+                        $ids = $this->licenseService->parseLicenseKey($rememberedKey);
 
                         $this->licenseService->saveLocalLicense([
                             'license_key' => $rememberedKey,
                             'status' => 'active',
                             'device_id' => $deviceId,
                             'hardware_id' => $deviceId,
+                            'sejoli_user_id' => $ids['user_id'] ?? null,
+                            'sejoli_product_id' => $ids['product_id'] ?? null,
                             'subscription_status' => $subscriptionStatus,
                             'subscription_expires_at' => $subscriptionExpiresAt,
                             'subscription_checked_at' => now()->toIso8601String(),
@@ -59,6 +62,7 @@ class EnsureLicenseIsActive
                         }
 
                         session(['license_authenticated' => true]);
+                        session(['license_key' => $rememberedKey]);
 
                         return $next($request);
                     }
@@ -78,6 +82,7 @@ class EnsureLicenseIsActive
         if (!$license || ($license['status'] ?? 'inactive') !== 'active') {
             session()->forget('license_authenticated');
             session()->forget('license_user_email');
+            session()->forget('license_key');
             Cookie::queue(Cookie::forget('simak_license'));
 
             return redirect()->route('license.activate.form')

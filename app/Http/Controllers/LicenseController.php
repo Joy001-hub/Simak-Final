@@ -93,39 +93,31 @@ class LicenseController extends Controller
 
     public function processActivate(Request $request, LicenseService $licenseService)
     {
-        Log::info('[License] processActivate hit', ['email' => $request->input('email')]);
+        Log::info('[License] processActivate hit', [
+            'user_id' => $request->input('user_id'),
+            'product_id' => $request->input('product_id'),
+        ]);
 
         try {
             $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string',
-                'license' => 'required|string',
+                'user_id' => 'required|integer|min:1',
+                'product_id' => 'required|integer|min:1',
             ]);
 
-            $email = trim($request->email);
-            $password = $request->password;
-            $deviceId = $this->resolveDeviceId($request, $licenseService);
-            $deviceId = $this->resolveDeviceId($request, $licenseService);
-            $deviceName = $this->resolveDeviceName($request);
-            $licenseKey = trim($request->license);
+            $userId = (int) $request->user_id;
+            $productId = (int) $request->product_id;
+            $licenseKey = $licenseService->buildLicenseKey($userId, $productId);
             $deviceId = $this->resolveDeviceId($request, $licenseService);
             $deviceName = $this->resolveDeviceName($request);
 
-            $result = $licenseService->activate($email, $password, $licenseKey, $deviceId);
+            $result = $licenseService->activate($userId, $productId);
 
             if ($result === null) {
                 Log::warning('[License] activation failed - server unreachable', [
-                    'email' => $email,
                     'license' => $licenseKey,
                 ]);
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Gagal menghubungi server lisensi. Periksa koneksi internet Anda dan coba lagi.'])
-                    ->withInput();
-            }
-
-            if ($licenseService->messageContains($result, 'already registered')) {
-                return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Ada kesalahan Auth, silahkan hubungi admin via whatsapp.'])
+                    ->withErrors(['msg' => 'Gagal menghubungi server subscription. Periksa koneksi internet Anda dan coba lagi.'])
                     ->withInput();
             }
 
@@ -140,7 +132,8 @@ class LicenseController extends Controller
                     'status' => 'active',
                     'device_id' => $deviceId,
                     'hardware_id' => $deviceId,
-                    'email' => $email,
+                    'sejoli_user_id' => $userId,
+                    'sejoli_product_id' => $productId,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
@@ -152,7 +145,7 @@ class LicenseController extends Controller
                     $errorMsg = $licenseService->getLastError() ?? 'Gagal menyimpan lisensi ke perangkat.';
                     Log::error('[License] Failed to save license locally', [
                         'error' => $errorMsg,
-                        'email' => $email,
+                        'user_id' => $userId,
                     ]);
                     return redirect()->route('license.activate.form')
                         ->withErrors(['msg' => 'Aktivasi berhasil, tapi ' . $errorMsg . ' Coba jalankan aplikasi sebagai Administrator.'])
@@ -171,7 +164,7 @@ class LicenseController extends Controller
                 }
 
                 session(['license_authenticated' => true]);
-                session(['license_user_email' => $email]);
+                session(['license_key' => $licenseKey]);
                 $this->queueLicenseCookie($licenseKey);
                 $this->queueDeviceCookie($deviceId);
 
@@ -179,13 +172,13 @@ class LicenseController extends Controller
             }
 
             Log::warning('[License] activation failed', [
-                'email' => $email,
+                'user_id' => $userId,
                 'license' => $licenseKey,
                 'response' => $result,
             ]);
 
             return redirect()->route('license.activate.form')
-                ->withErrors(['msg' => $result['message'] ?? 'Lisensi tidak valid atau kredensial salah.'])
+                ->withErrors(['msg' => $result['message'] ?? 'User ID atau Product ID tidak valid atau subscription belum aktif.'])
                 ->withInput();
 
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
@@ -207,12 +200,20 @@ class LicenseController extends Controller
 
     public function processLogin(Request $request, LicenseService $licenseService)
     {
-        Log::info('[License] processLogin hit', ['license' => $request->input('license')]);
+        Log::info('[License] processLogin hit', [
+            'user_id' => $request->input('user_id'),
+            'product_id' => $request->input('product_id'),
+        ]);
 
         try {
-            $request->validate(['license' => 'required|string']);
+            $request->validate([
+                'user_id' => 'required|integer|min:1',
+                'product_id' => 'required|integer|min:1',
+            ]);
 
-            $licenseKey = trim($request->license);
+            $userId = (int) $request->user_id;
+            $productId = (int) $request->product_id;
+            $licenseKey = $licenseService->buildLicenseKey($userId, $productId);
             $local = $licenseService->loadLocalLicense();
             $deviceId = $this->resolveDeviceId($request, $licenseService);
             $deviceName = $this->resolveDeviceName($request);
@@ -226,7 +227,7 @@ class LicenseController extends Controller
 
             if ($result === null) {
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Gagal menghubungi server lisensi. Periksa koneksi internet Anda.']);
+                    ->withErrors(['msg' => 'Gagal menghubungi server subscription. Periksa koneksi internet Anda.']);
             }
 
             Log::info('[License] validateLicense response', ['license' => $licenseKey, 'response' => $result]);
@@ -242,6 +243,8 @@ class LicenseController extends Controller
                     'status' => 'active',
                     'device_id' => $deviceId,
                     'hardware_id' => $deviceId,
+                    'sejoli_user_id' => $userId,
+                    'sejoli_product_id' => $productId,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
@@ -261,14 +264,16 @@ class LicenseController extends Controller
                 }
 
                 Log::info('[License] login successful', ['license' => $licenseKey]);
+                session(['license_authenticated' => true]);
+                session(['license_key' => $licenseKey]);
                 $this->queueLicenseCookie($licenseKey);
                 $this->queueDeviceCookie($deviceId);
                 return redirect()->route('dashboard');
             }
 
-            Log::warning('[License] login failed - invalid license', ['license' => $licenseKey]);
+            Log::warning('[License] login failed - invalid subscription', ['license' => $licenseKey]);
             return redirect()->route('license.activate.form')
-                ->withErrors(['msg' => 'License key tidak valid. Silakan aktivasi ulang.']);
+                ->withErrors(['msg' => 'User ID atau Product ID tidak valid. Silakan aktivasi ulang.']);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -281,43 +286,40 @@ class LicenseController extends Controller
 
     public function processAuthLogin(Request $request, LicenseService $licenseService)
     {
-        Log::info('[License] processAuthLogin hit', ['email' => $request->input('email')]);
+        Log::info('[License] processAuthLogin hit', [
+            'user_id' => $request->input('user_id'),
+            'product_id' => $request->input('product_id'),
+        ]);
 
         try {
             $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string',
+                'user_id' => 'required|integer|min:1',
+                'product_id' => 'required|integer|min:1',
             ]);
 
-            $email = trim($request->email);
-            $password = $request->password;
-
-            $local = $licenseService->loadLocalLicense();
-            $licenseKey = $local['license_key'] ?? $request->cookie('simak_license');
-
-            if (!$licenseKey) {
-                return redirect()->route('login')
-                    ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan aktivasi terlebih dahulu.']);
-            }
+            $userId = (int) $request->user_id;
+            $productId = (int) $request->product_id;
+            $licenseKey = $licenseService->buildLicenseKey($userId, $productId);
 
             $deviceId = $this->resolveDeviceId($request, $licenseService);
             $deviceName = $this->resolveDeviceName($request);
-            $result = $licenseService->validateRemoteWithAuth($email, $password, $licenseKey, $deviceId);
+            $result = $licenseService->validateRemote($licenseKey, $deviceId);
 
             if ($result === null) {
                 return redirect()->route('login')
-                    ->withErrors(['msg' => 'Gagal menghubungi server. Periksa koneksi internet Anda.'])
+                    ->withErrors(['msg' => 'Gagal menghubungi server subscription. Periksa koneksi internet Anda.'])
                     ->withInput();
             }
 
             Log::info('[License] authLogin validateLicense response', [
                 'license' => $licenseKey,
-                'email' => $email,
+                'user_id' => $userId,
+                'product_id' => $productId,
                 'response' => $result,
             ]);
 
-            if ($result && isset($result['valid']) && $result['valid'] === false) {
-                $message = 'Email atau password yang dimasukan salah';
+            if ($result && isset($result['success']) && $result['success'] === false) {
+                $message = $result['message'] ?? 'User ID atau Product ID tidak valid';
                 return redirect()->route('login')
                     ->withErrors(['msg' => $message])
                     ->withInput();
@@ -335,7 +337,8 @@ class LicenseController extends Controller
                     'status' => 'active',
                     'device_id' => $deviceId,
                     'hardware_id' => $deviceId,
-                    'email' => $email,
+                    'sejoli_user_id' => $userId,
+                    'sejoli_product_id' => $productId,
                     'subscription_status' => $subscriptionStatus,
                     'subscription_expires_at' => $subscriptionExpiresAt,
                     'subscription_checked_at' => now()->toIso8601String(),
@@ -357,7 +360,7 @@ class LicenseController extends Controller
                 }
 
                 session(['license_authenticated' => true]);
-                session(['license_user_email' => $email]);
+                session(['license_key' => $licenseKey]);
 
                 if ($remember) {
                     session(['remember_session' => true]);
@@ -370,7 +373,7 @@ class LicenseController extends Controller
             }
 
             return redirect()->route('login')
-                ->withErrors(['msg' => $result['message'] ?? 'Login gagal. Kredensial tidak valid atau lisensi tidak ditemukan.'])
+                ->withErrors(['msg' => $result['message'] ?? 'Login gagal. Subscription tidak ditemukan atau tidak aktif.'])
                 ->withInput();
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -385,52 +388,45 @@ class LicenseController extends Controller
 
     public function processAuthReset(Request $request, LicenseService $licenseService)
     {
-        Log::info('[License] processAuthReset hit', ['email' => $request->input('email')]);
+        Log::info('[License] processAuthReset hit', [
+            'user_id' => $request->input('user_id'),
+            'product_id' => $request->input('product_id'),
+        ]);
 
         try {
             $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string',
+                'user_id' => 'required|integer|min:1',
+                'product_id' => 'required|integer|min:1',
             ]);
 
-            $email = trim($request->email);
-            $password = $request->password;
-
-            $local = $licenseService->loadLocalLicense();
-            $licenseKey = $local['license_key'] ?? $request->cookie('simak_license');
-
-            if (!$licenseKey) {
-                return redirect()->route('reset')
-                    ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan aktivasi terlebih dahulu.']);
-            }
+            $userId = (int) $request->user_id;
+            $productId = (int) $request->product_id;
+            $licenseKey = $licenseService->buildLicenseKey($userId, $productId);
 
             $deviceId = $this->resolveDeviceId($request, $licenseService);
-            $result = $licenseService->resetRemote($email, $password, $licenseKey, $deviceId);
+            $result = $licenseService->validateRemote($licenseKey, $deviceId);
 
             if ($result === null) {
-                return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Gagal menghubungi server. Periksa koneksi internet Anda.']);
+                return redirect()->route('reset')
+                    ->withErrors(['msg' => 'Gagal menghubungi server subscription. Periksa koneksi internet Anda.']);
             }
 
             Log::info('[License] authReset response', ['license' => $licenseKey, 'response' => $result]);
 
-            if ($licenseService->messageContains($result, ['tidak ditemukan', "doesn't exist"])) {
-                return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Lisensi tidak ditemukan.']);
-            }
-
-            $success = $licenseService->isRemoteValid($result, $licenseKey, 'reset');
+            $success = $licenseService->isRemoteValid($result, $licenseKey, 'validate');
 
             if ($success) {
                 $licenseService->revokeLocalLicense();
                 $this->clearLicenseCookie();
+                session()->forget('license_key');
                 return redirect()->route('license.activate.form')
-                    ->with('success', 'Lisensi berhasil direset. Silakan aktivasi ulang.');
+                    ->with('success', 'Aktivasi lokal direset. Silakan aktivasi ulang.');
             } else {
                 $licenseService->revokeLocalLicense();
                 $this->clearLicenseCookie();
+                session()->forget('license_key');
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Reset gagal, lisensi lokal dihapus. Silakan aktivasi ulang.']);
+                    ->withErrors(['msg' => 'Subscription tidak ditemukan atau tidak aktif.']);
             }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -449,6 +445,7 @@ class LicenseController extends Controller
             session()->invalidate();
             session()->regenerateToken();
             $this->clearLicenseCookie();
+            session()->forget('license_key');
         } catch (\Throwable $e) {
             Log::error('[License] logout error: ' . $e->getMessage());
         }
@@ -462,43 +459,38 @@ class LicenseController extends Controller
 
         try {
             $request->validate([
-                'email' => 'required|email',
-                'password' => 'required|string',
-                'license' => 'required|string',
+                'user_id' => 'required|integer|min:1',
+                'product_id' => 'required|integer|min:1',
             ]);
 
-            $email = trim($request->email);
-            $password = $request->password;
-            $licenseKey = trim($request->license);
+            $userId = (int) $request->user_id;
+            $productId = (int) $request->product_id;
+            $licenseKey = $licenseService->buildLicenseKey($userId, $productId);
             $deviceId = $this->resolveDeviceId($request, $licenseService);
 
-            $resp = $licenseService->resetRemote($email, $password, $licenseKey, $deviceId);
+            $resp = $licenseService->validateRemote($licenseKey, $deviceId);
 
             if ($resp === null) {
                 return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Gagal menghubungi server. Periksa koneksi internet Anda.']);
+                    ->withErrors(['msg' => 'Gagal menghubungi server subscription. Periksa koneksi internet Anda.']);
             }
 
             Log::info('[License] reset response', ['license' => $licenseKey, 'response' => $resp]);
 
-            if ($licenseService->messageContains($resp, ['tidak ditemukan', "doesn't exist"])) {
-                return redirect()->route('license.activate.form')
-                    ->withErrors(['msg' => 'Lisensi tidak terdaftar.']);
-            }
-
-            $success = $licenseService->isRemoteValid($resp, $licenseKey, 'reset');
+            $success = $licenseService->isRemoteValid($resp, $licenseKey, 'validate');
 
             if ($success) {
                 $licenseService->revokeLocalLicense();
                 $this->clearLicenseCookie();
+                session()->forget('license_key');
                 Log::info('[License] reset successful');
                 return redirect()->route('license.activate.form')
-                    ->with('success', 'Lisensi sudah direset. Silakan aktivasi ulang di perangkat baru.');
+                    ->with('success', 'Aktivasi lokal direset. Silakan aktivasi ulang di perangkat baru.');
             }
 
             Log::warning('[License] reset failed', ['response' => $resp]);
             return redirect()->route('license.activate.form')
-                ->withErrors(['msg' => 'Reset lisensi gagal: ' . ($resp['message'] ?? 'Unknown error')]);
+                ->withErrors(['msg' => $resp['message'] ?? 'Subscription tidak ditemukan atau tidak aktif.']);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -564,11 +556,13 @@ class LicenseController extends Controller
                     Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
                 }
 
+                session(['license_key' => $licenseKey]);
                 return redirect()->route('dashboard')
                     ->with('success', 'Lisensi tervalidasi ulang.');
             }
 
             $licenseService->revokeLocalLicense();
+            session()->forget('license_key');
             return redirect()->route('license.activate.form')
                 ->withErrors(['msg' => 'Validasi gagal. Silakan aktivasi ulang.']);
 
@@ -745,6 +739,7 @@ class LicenseController extends Controller
             session()->invalidate();
             session()->regenerateToken();
             $this->clearLicenseCookie();
+            session()->forget('license_key');
 
             return response()->json([
                 'success' => $deleted,

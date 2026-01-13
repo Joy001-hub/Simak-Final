@@ -19,41 +19,10 @@ class AppModeService
 
     public function resolve(): array
     {
-        $forcedMode = config('license.force_mode');
-        if (is_string($forcedMode)) {
-            $forcedMode = strtolower(trim($forcedMode));
-            if (in_array($forcedMode, [self::MODE_LOCAL, self::MODE_CLOUD], true)) {
-                $tenantKey = null;
-                if ($forcedMode === self::MODE_CLOUD) {
-                    $tenantKey = config('license.force_tenant_key');
-                    if (!$tenantKey) {
-                        $license = $this->licenseService->loadLocalLicense();
-                        if ($license && !empty($license['license_key'])) {
-                            $tenantKey = $this->tenantKey($license['license_key']);
-                        }
-                    }
-                }
+        $licenseKey = $this->resolveLicenseKey();
+        $tenantKey = $licenseKey ? $this->tenantKey($licenseKey) : null;
 
-                return $this->setContext($forcedMode, $tenantKey, false, null);
-            }
-        }
-
-        $license = $this->licenseService->loadLocalLicense();
-
-        if (!$license || empty($license['license_key'])) {
-            return $this->setContext(self::MODE_LOCAL, null, false, null);
-        }
-
-        $subscriptionStatus = Arr::get($license, 'subscription_status');
-        $isPremium = $subscriptionStatus === 'active';
-        $mode = $isPremium ? self::MODE_CLOUD : self::MODE_LOCAL;
-
-        $readOnly = $this->shouldReadOnly($license);
-        $reason = $readOnly ? 'offline_grace' : null;
-
-        $tenantKey = $isPremium ? $this->tenantKey($license['license_key']) : null;
-
-        return $this->setContext($mode, $tenantKey, $readOnly, $reason);
+        return $this->setContext(self::MODE_CLOUD, $tenantKey, false, null);
     }
 
     public function tenantKey(string $licenseKey): string
@@ -109,5 +78,28 @@ class AppModeService
             'read_only' => $readOnly,
             'read_only_reason' => $reason,
         ];
+    }
+
+    private function resolveLicenseKey(): ?string
+    {
+        $sessionKey = session('license_key');
+        if (is_string($sessionKey) && trim($sessionKey) !== '') {
+            return trim($sessionKey);
+        }
+
+        try {
+            $cookieKey = request()?->cookie('simak_license');
+        } catch (\Throwable $e) {
+            $cookieKey = null;
+        }
+
+        if (is_string($cookieKey) && trim($cookieKey) !== '') {
+            return trim($cookieKey);
+        }
+
+        $local = $this->licenseService->loadLocalLicense();
+        $localKey = $local['license_key'] ?? null;
+
+        return is_string($localKey) && trim($localKey) !== '' ? trim($localKey) : null;
     }
 }
