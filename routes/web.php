@@ -15,9 +15,11 @@ use App\Http\Middleware\EnsureLicenseIsActive;
 Route::get('/login', function () {
     $licenseService = app(\App\Services\LicenseService::class);
     $local = $licenseService->loadLocalLicense();
-    if (!$local || empty($local['license_key'])) {
+    $licenseKey = $local['license_key'] ?? request()->cookie('simak_license');
+    if (!$licenseKey) {
         return redirect()->route('license.activate.form')->withErrors(['msg' => 'File lisensi tidak ditemukan. Silakan aktivasi lisensi baru.']);
-    }return view('auth.login');
+    }
+    return view('auth.login');
 })->name('login');
 Route::post('/login', [LicenseController::class, 'processAuthLogin'])->name('auth.login');
 Route::get('/reset', function () {

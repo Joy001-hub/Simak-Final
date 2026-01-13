@@ -293,13 +293,15 @@ class LicenseController extends Controller
             $password = $request->password;
 
             $local = $licenseService->loadLocalLicense();
-            $licenseKey = $local['license_key'] ?? null;
+            $licenseKey = $local['license_key'] ?? $request->cookie('simak_license');
 
             if (!$licenseKey) {
                 return redirect()->route('license.activate.form')
                     ->withErrors(['msg' => 'Lisensi belum terdaftar. Silakan aktivasi terlebih dahulu.']);
             }
 
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
+            $deviceName = $this->resolveDeviceName($request);
             $result = $licenseService->validateRemoteWithAuth($email, $password, $licenseKey, $deviceId);
 
             if ($result === null) {
@@ -395,13 +397,14 @@ class LicenseController extends Controller
             $password = $request->password;
 
             $local = $licenseService->loadLocalLicense();
-            $licenseKey = $local['license_key'] ?? null;
+            $licenseKey = $local['license_key'] ?? $request->cookie('simak_license');
 
             if (!$licenseKey) {
                 return redirect()->route('license.activate.form')
                     ->withErrors(['msg' => 'Tidak ada lisensi yang tersimpan untuk direset.']);
             }
 
+            $deviceId = $this->resolveDeviceId($request, $licenseService);
             $result = $licenseService->resetRemote($email, $password, $licenseKey, $deviceId);
 
             if ($result === null) {
