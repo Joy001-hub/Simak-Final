@@ -10,8 +10,10 @@ use App\Models\Marketer;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\Sale;
+use App\Services\LicenseService;
 use Database\Seeders\DataDummySeeders;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -29,7 +31,26 @@ class DataManagementController extends Controller
                 'sales' => Sale::count(),
                 'payments' => Payment::count(),
             ];
-            return view('data-management.index', compact('stats'));
+            $subscriptionStatus = null;
+            $subscriptionExpiresLabel = null;
+
+            try {
+                $license = app(LicenseService::class)->loadLocalLicense();
+                $subscriptionStatus = $license['subscription_status'] ?? null;
+                $subscriptionExpiresAt = $license['subscription_expires_at'] ?? null;
+                if ($subscriptionExpiresAt) {
+                    try {
+                        $subscriptionExpiresLabel = Carbon::parse($subscriptionExpiresAt)->format('d/m/Y');
+                    } catch (\Throwable $e) {
+                        $subscriptionExpiresLabel = $subscriptionExpiresAt;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $subscriptionStatus = null;
+                $subscriptionExpiresLabel = null;
+            }
+
+            return view('data-management.index', compact('stats', 'subscriptionStatus', 'subscriptionExpiresLabel'));
         }, 'dashboard');
     }
 

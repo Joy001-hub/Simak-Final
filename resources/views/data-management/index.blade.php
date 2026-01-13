@@ -60,10 +60,21 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
                 <div>
                     <h5 class="panel-title" style="margin:0;">Upgrade Simak Pro</h5>
+                    @if (($subscriptionStatus ?? null) === 'active')
+                        <p class="hint" style="margin-top:6px;">
+                            Langganan aktif sampai {{ $subscriptionExpiresLabel ?: '-' }}
+                        </p>
+                    @endif
                 </div>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <a class="btn primary" href="{{ config('services.sejoli.upgrade_url') }}" target="_blank"
-                        rel="noopener noreferrer" style="padding:8px 12px; box-shadow:none;">Upgrade Akun</a>
+                    @if (($subscriptionStatus ?? null) === 'active')
+                        <span class="btn" style="padding:8px 12px; background:#e2e8f0; color:#94a3b8; border:1px solid #e2e8f0; cursor:not-allowed; box-shadow:none;">
+                            Sudah Upgrade
+                        </span>
+                    @else
+                        <a class="btn primary" href="{{ config('services.sejoli.upgrade_url') }}" target="_blank"
+                            rel="noopener noreferrer" style="padding:8px 12px; box-shadow:none;">Upgrade Akun</a>
+                    @endif
                 </div>
             </div>
         </div>
