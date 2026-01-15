@@ -29,4 +29,8 @@ return [
         'upgrade_url' => env('SEJOLI_UPGRADE_URL'),
         'addon_url' => env('SEJOLI_ADDON_URL'),
     ],
+    'starsender' => [
+        'api_key' => env('STARSENDER_API_KEY'),
+        'api_url' => env('STARSENDER_API_URL', 'https://api.starsender.online/api/send'),
+    ],
 ];

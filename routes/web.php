@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PenjualanController;
 use App\Http\Controllers\ProjectController;
@@ -11,11 +12,19 @@ use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DataManagementController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\RegistrationController;
 use App\Http\Middleware\EnsureLicenseIsActive;
 Route::get('/login', function () {
     return view('auth.login');
 })->name('login');
 Route::post('/login', [LicenseController::class, 'processAuthLogin'])->name('auth.login');
+Route::get('/register', [RegistrationController::class, 'showRegister'])->name('register');
+Route::post('/register', [RegistrationController::class, 'checkIdentifier'])->name('register.check');
+Route::get('/register/verify', [RegistrationController::class, 'showVerify'])->name('register.verify');
+Route::post('/register/verify', [RegistrationController::class, 'verifyOtp'])->name('register.verify.submit');
+Route::post('/register/resend-otp', [RegistrationController::class, 'resendOtp'])->name('register.resend');
+Route::get('/register/password', [RegistrationController::class, 'showPassword'])->name('register.password');
+Route::post('/register/password', [RegistrationController::class, 'createPassword'])->name('register.password.store');
 Route::get('/reset', function () {
     return view('auth.resetpage');
 })->name('reset');
@@ -27,9 +36,7 @@ Route::post('/license/revalidate', [LicenseController::class, 'revalidate'])->na
 Route::get('/license/blocked', [LicenseController::class, 'blocked'])->name('license.blocked');
 Route::get('/license/locked', [LicenseController::class, 'locked'])->name('license.locked');
 Route::get('/logout', function () {
-    session()->forget('license_authenticated');
-    session()->forget('license_user_email');
-    session()->forget('license_key');
+    Auth::logout();
     session()->invalidate();
     session()->regenerateToken();
     return redirect()->route('login');

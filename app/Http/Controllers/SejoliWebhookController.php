@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\LicenseService;
-use App\Services\TenantService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SejoliWebhookController extends Controller
 {
-    public function handle(Request $request, LicenseService $licenseService, TenantService $tenantService)
+    public function handle(Request $request, LicenseService $licenseService)
     {
         $payload = $request->getContent();
         $signature = (string) $request->header('X-Sejoli-Signature', '');
@@ -66,7 +68,9 @@ class SejoliWebhookController extends Controller
         $status = $this->resolveSubscriptionStatus($payloadData, $event);
         $endDate = $this->extractEndDate($payloadData);
         $userEmail = $payloadData['data']['user']['email'] ?? $payloadData['data']['subscription']['email'] ?? null;
+        $userEmail = is_string($userEmail) ? strtolower(trim($userEmail)) : null;
         $userPhone = $payloadData['data']['user']['phone'] ?? null;
+        $userPhone = $this->normalizePhone((string) $userPhone);
         $orderId = $payloadData['data']['subscription']['order_id'] ?? null;
 
         $licenseKey = $licenseService->buildLicenseKey(
@@ -74,17 +78,68 @@ class SejoliWebhookController extends Controller
             $identifiers['product_id']
         );
 
+        // Upsert user subscription status (no device/tenant limit)
         try {
-            $tenantService->ensureTenant($licenseKey, $status);
+            $user = User::query()
+                ->where('sejoli_user_id', $identifiers['user_id'])
+                ->where('sejoli_product_id', $identifiers['product_id'])
+                ->first();
+
+            if (!$user && $userEmail) {
+                $user = User::query()->where('email', $userEmail)->first();
+            }
+
+            $displayName = $payloadData['data']['user']['display_name'] ?? null;
+            $fallbackEmail = 'user_' . $identifiers['user_id'] . '@example.com';
+
+            if ($user) {
+                $updates = [
+                    'subscription_status' => $status,
+                    'subscription_end_date' => $endDate,
+                    'last_subscription_check_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                if ($displayName) {
+                    $updates['name'] = $displayName;
+                }
+
+                if ($userEmail && $user->email !== $userEmail) {
+                    $updates['email'] = $userEmail;
+                }
+
+                if ($userPhone && empty($user->phone)) {
+                    $updates['phone'] = $userPhone;
+                }
+
+                if (empty($user->sejoli_user_id)) {
+                    $updates['sejoli_user_id'] = $identifiers['user_id'];
+                }
+                if (empty($user->sejoli_product_id)) {
+                    $updates['sejoli_product_id'] = $identifiers['product_id'];
+                }
+
+                DB::table('users')->where('id', $user->id)->update($updates);
+            } else {
+                $insertEmail = $userEmail ?: $fallbackEmail;
+                DB::table('users')->insert([
+                    'name' => $displayName ?: 'User',
+                    'email' => $insertEmail,
+                    'phone' => $userPhone,
+                    'password' => Hash::make(Str::random(32)),
+                    'sejoli_user_id' => $identifiers['user_id'],
+                    'sejoli_product_id' => $identifiers['product_id'],
+                    'subscription_status' => $status,
+                    'subscription_end_date' => $endDate,
+                    'last_subscription_check_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
         } catch (\Throwable $e) {
-            Log::error('[SejoliWebhook] Failed to update tenant', [
-                'license_key' => $licenseKey,
+            Log::warning('[SejoliWebhook] Failed to upsert user subscription', [
                 'error' => $e->getMessage(),
             ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update tenant.',
-            ], 500);
         }
 
         try {
@@ -189,5 +244,21 @@ class SejoliWebhookController extends Controller
         }
 
         return null;
+    }
+
+    private function normalizePhone(string $input): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $input);
+        if (!$digits) {
+            return null;
+        }
+
+        if (str_starts_with($digits, '0')) {
+            $digits = '62' . substr($digits, 1);
+        } elseif (str_starts_with($digits, '8')) {
+            $digits = '62' . $digits;
+        }
+
+        return $digits;
     }
 }

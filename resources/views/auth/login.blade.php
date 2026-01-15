@@ -296,18 +296,17 @@
                 <input type="hidden" name="device_name" id="device_name">
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="user_id">User ID</label>
-                        <input type="number" name="user_id" id="user_id" required inputmode="numeric" autofocus
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="email">Email</label>
+                        <input type="email" name="email" id="email" required autofocus
                             class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
-                            placeholder="Masukkan User ID" value="{{ old('user_id') }}">
+                            placeholder="Masukkan email" value="{{ old('email') }}">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="product_id">Product ID</label>
-                        <input type="number" name="product_id" id="product_id" required inputmode="numeric"
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="password">Password</label>
+                        <input type="password" name="password" id="password" required
                             class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
-                            placeholder="Masukkan Product ID" value="{{ old('product_id') }}">
-                        <p class="mt-2 text-xs text-slate-400">Gunakan User ID &amp; Product ID dari Sejoli External API.</p>
+                            placeholder="Masukkan password">
                     </div>
 
                     {{-- Remember Session Checkbox --}}
@@ -349,8 +348,8 @@
 
                     <div class="text-center mt-6 space-y-3">
                         <p class="text-sm text-slate-500">
-                            Mengalami masalah subscription? <a href="{{ route('reset') }}"
-                                class="text-[#b91c3b] font-semibold hover:underline">Reset Aktivasi</a>
+                            Belum punya akun? <a href="{{ route('register') }}"
+                                class="text-[#b91c3b] font-semibold hover:underline">Daftar di sini</a>
                         </p>
                     </div>
                 </form>
@@ -546,7 +545,7 @@
 
         // Auto-focus first field
         document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('user_id').focus();
+            document.getElementById('email').focus();
 
             // Auto-hide alerts
             const alerts = document.querySelectorAll('[role="alert"]');

@@ -4,11 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Exceptions\DeviceLimitExceededException;
+use App\Models\User;
 use App\Services\LicenseService;
 use App\Services\TenantService;
 use App\Services\CloudMigrationService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Carbon;
 
 class LicenseController extends Controller
 {
@@ -286,100 +290,77 @@ class LicenseController extends Controller
 
     public function processAuthLogin(Request $request, LicenseService $licenseService)
     {
-        Log::info('[License] processAuthLogin hit', [
-            'user_id' => $request->input('user_id'),
-            'product_id' => $request->input('product_id'),
+        Log::info('[Auth] login attempt', [
+            'email' => $request->input('email'),
         ]);
 
         try {
             $request->validate([
-                'user_id' => 'required|integer|min:1',
-                'product_id' => 'required|integer|min:1',
+                'email' => 'required|email',
+                'password' => 'required|string',
             ]);
 
-            $userId = (int) $request->user_id;
-            $productId = (int) $request->product_id;
-            $licenseKey = $licenseService->buildLicenseKey($userId, $productId);
+            $email = strtolower(trim((string) $request->input('email')));
+            $password = (string) $request->input('password');
+            $remember = $request->boolean('remember');
 
-            $deviceId = $this->resolveDeviceId($request, $licenseService);
-            $deviceName = $this->resolveDeviceName($request);
-            $result = $licenseService->validateRemote($licenseKey, $deviceId);
-
-            if ($result === null) {
+            $user = User::query()->where('email', $email)->first();
+            if (!$user) {
                 return redirect()->route('login')
-                    ->withErrors(['msg' => 'Gagal menghubungi server subscription. Periksa koneksi internet Anda.'])
+                    ->withErrors(['msg' => 'Email tidak terdaftar.'])
                     ->withInput();
             }
 
-            Log::info('[License] authLogin validateLicense response', [
-                'license' => $licenseKey,
-                'user_id' => $userId,
-                'product_id' => $productId,
-                'response' => $result,
-            ]);
-
-            if ($result && isset($result['success']) && $result['success'] === false) {
-                $message = $result['message'] ?? 'User ID atau Product ID tidak valid';
+            if (!$user->password_created_at) {
                 return redirect()->route('login')
-                    ->withErrors(['msg' => $message])
+                    ->withErrors(['msg' => 'Akun belum aktif. Silakan buat password terlebih dahulu.'])
                     ->withInput();
             }
 
-            $isValid = $licenseService->isRemoteValid($result, $licenseKey, 'validate');
+            if (!Hash::check($password, $user->password)) {
+                return redirect()->route('login')
+                    ->withErrors(['msg' => 'Email atau password salah.'])
+                    ->withInput();
+            }
 
-            if ($isValid) {
-                $remember = $request->boolean('remember');
-                $subscriptionStatus = $licenseService->extractSubscriptionStatus($result);
-                $subscriptionExpiresAt = $licenseService->extractSubscriptionExpirationDate($result);
+            $status = strtolower((string) ($user->subscription_status ?? ''));
+            $expired = false;
+            if ($status === 'expired') {
+                $expired = true;
+            }
 
-                $licenseService->saveLocalLicense([
-                    'license_key' => $licenseKey,
-                    'status' => 'active',
-                    'device_id' => $deviceId,
-                    'hardware_id' => $deviceId,
-                    'sejoli_user_id' => $userId,
-                    'sejoli_product_id' => $productId,
-                    'subscription_status' => $subscriptionStatus,
-                    'subscription_expires_at' => $subscriptionExpiresAt,
-                    'subscription_checked_at' => now()->toIso8601String(),
-                    'last_check_at' => now()->toIso8601String(),
-                    'message' => 'Validated via auth login',
-                    'remember_session' => $remember,
-                ]);
-
+            if (!$expired && $user->subscription_end_date) {
                 try {
-                    $tenantService = app(TenantService::class);
-                    $tenantService->ensureTenant($licenseKey, $subscriptionStatus);
-                    $tenantService->registerDevice($licenseKey, $deviceId, $deviceName);
-                } catch (DeviceLimitExceededException $e) {
-                    return redirect()->route('login')
-                        ->withErrors(['msg' => 'Batas perangkat tercapai. Silakan upgrade add-on perangkat.'])
-                        ->withInput();
+                    $expired = Carbon::parse($user->subscription_end_date)->isPast();
                 } catch (\Throwable $e) {
-                    Log::warning('[License] tenant registration failed', ['error' => $e->getMessage()]);
+                    $expired = false;
                 }
-
-                session(['license_authenticated' => true]);
-                session(['license_key' => $licenseKey]);
-
-                if ($remember) {
-                    session(['remember_session' => true]);
-                    session(['persist_license' => true]);
-                }
-                $this->queueLicenseCookie($licenseKey);
-                $this->queueDeviceCookie($deviceId);
-
-                return redirect()->route('dashboard');
             }
 
-            return redirect()->route('login')
-                ->withErrors(['msg' => $result['message'] ?? 'Login gagal. Subscription tidak ditemukan atau tidak aktif.'])
-                ->withInput();
+            if ($status !== 'active' && !$expired) {
+                return redirect()->route('login')
+                    ->withErrors(['msg' => 'Subscription belum aktif. Silakan tunggu aktivasi atau hubungi admin.'])
+                    ->withInput();
+            }
+
+            Auth::login($user, $remember);
+            session(['license_authenticated' => true]);
+
+            if ($remember) {
+                session(['remember_session' => true]);
+            }
+
+            $redirect = redirect()->route('dashboard');
+            if ($expired) {
+                $redirect->with('success', 'Subscription expired. Akses dalam mode read-only.');
+            }
+
+            return $redirect;
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            Log::error('[License] processAuthLogin error: ' . $e->getMessage());
+            Log::error('[Auth] processAuthLogin error: ' . $e->getMessage());
             return redirect()->route('login')
                 ->withErrors(['msg' => 'Terjadi kesalahan saat login. Silakan coba lagi.'])
                 ->withInput();
