@@ -69,8 +69,7 @@ class SejoliWebhookController extends Controller
         $endDate = $this->extractEndDate($payloadData);
         $userEmail = $payloadData['data']['user']['email'] ?? $payloadData['data']['subscription']['email'] ?? null;
         $userEmail = is_string($userEmail) ? strtolower(trim($userEmail)) : null;
-        $userPhone = $payloadData['data']['user']['phone'] ?? null;
-        $userPhone = $this->normalizePhone((string) $userPhone);
+        $userPhone = $this->extractPhone($payloadData);
         $orderId = $payloadData['data']['subscription']['order_id'] ?? null;
 
         $licenseKey = $licenseService->buildLicenseKey(
@@ -108,7 +107,7 @@ class SejoliWebhookController extends Controller
                     $updates['email'] = $userEmail;
                 }
 
-                if ($userPhone && empty($user->phone)) {
+                if ($userPhone && (empty($user->phone) || $user->phone === $userPhone)) {
                     $updates['phone'] = $userPhone;
                 }
 
@@ -260,5 +259,53 @@ class SejoliWebhookController extends Controller
         }
 
         return $digits;
+    }
+
+    private function extractPhone(array $payload): ?string
+    {
+        $data = $payload['data'] ?? [];
+        $candidates = [];
+
+        if (isset($data['user']) && is_array($data['user'])) {
+            foreach ([
+                'phone',
+                'phone_number',
+                'whatsapp',
+                'whatsapp_number',
+                'whatsapp_phone',
+                'mobile',
+                'no_hp',
+                'no_telp',
+            ] as $key) {
+                if (!empty($data['user'][$key])) {
+                    $candidates[] = $data['user'][$key];
+                }
+            }
+        }
+
+        if (isset($data['subscription']) && is_array($data['subscription'])) {
+            foreach (['phone', 'customer_phone', 'billing_phone'] as $key) {
+                if (!empty($data['subscription'][$key])) {
+                    $candidates[] = $data['subscription'][$key];
+                }
+            }
+        }
+
+        if (isset($data['order']) && is_array($data['order'])) {
+            foreach (['phone', 'customer_phone', 'billing_phone'] as $key) {
+                if (!empty($data['order'][$key])) {
+                    $candidates[] = $data['order'][$key];
+                }
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            $normalized = $this->normalizePhone((string) $candidate);
+            if ($normalized) {
+                return $normalized;
+            }
+        }
+
+        return null;
     }
 }

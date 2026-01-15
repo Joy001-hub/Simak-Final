@@ -13,6 +13,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DataManagementController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Middleware\EnsureLicenseIsActive;
 Route::get('/login', function () {
     return view('auth.login');
@@ -25,6 +26,13 @@ Route::post('/register/verify', [RegistrationController::class, 'verifyOtp'])->n
 Route::post('/register/resend-otp', [RegistrationController::class, 'resendOtp'])->name('register.resend');
 Route::get('/register/password', [RegistrationController::class, 'showPassword'])->name('register.password');
 Route::post('/register/password', [RegistrationController::class, 'createPassword'])->name('register.password.store');
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showRequest'])->name('password.forgot');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendOtp'])->name('password.forgot.send');
+Route::get('/forgot-password/verify', [ForgotPasswordController::class, 'showVerify'])->name('password.forgot.verify');
+Route::post('/forgot-password/verify', [ForgotPasswordController::class, 'verifyOtp'])->name('password.forgot.verify.submit');
+Route::post('/forgot-password/resend-otp', [ForgotPasswordController::class, 'resendOtp'])->name('password.forgot.resend');
+Route::get('/forgot-password/reset', [ForgotPasswordController::class, 'showReset'])->name('password.forgot.reset');
+Route::post('/forgot-password/reset', [ForgotPasswordController::class, 'resetPassword'])->name('password.forgot.reset.submit');
 Route::get('/reset', function () {
     return view('auth.resetpage');
 })->name('reset');

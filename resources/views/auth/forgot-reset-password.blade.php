@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buat Password - SIMAK</title>
+    <title>Reset Password - SIMAK</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css'])
     <style>
@@ -76,8 +76,8 @@
                     <img class="mx-auto mb-6" src="{{ asset('/logo-app.png') }}" alt="SIMAK Logo"
                         onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
                         style="width: 160px; height: auto;">
-                    <h1 class="text-2xl font-bold text-slate-900 mb-2">Buat Password</h1>
-                    <p class="text-slate-500 text-sm">Password akan digunakan untuk login otomatis di SIMAK.</p>
+                    <h1 class="text-2xl font-bold text-slate-900 mb-2">Reset Password</h1>
+                    <p class="text-slate-500 text-sm">Buat password baru untuk akun Anda.</p>
                 </div>
 
                 @if ($errors->any())
@@ -87,7 +87,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('register.password.store') }}" method="POST" class="px-8 pb-8 space-y-5">
+                <form action="{{ route('password.forgot.reset.submit') }}" method="POST" class="px-8 pb-8 space-y-5">
                     @csrf
 
                     <div>
@@ -108,6 +108,11 @@
                         class="btn-primary w-full text-white font-semibold py-4 rounded-xl flex items-center justify-center">
                         Simpan Password
                     </button>
+
+                    <p class="text-center text-sm text-slate-500 mt-4">
+                        Batal? <a href="{{ route('login') }}"
+                            class="text-[#b91c3b] font-semibold hover:underline">Kembali ke login</a>
+                    </p>
                 </form>
             </div>
         </div>

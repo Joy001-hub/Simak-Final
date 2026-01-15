@@ -6,55 +6,36 @@ use App\Models\User;
 use App\Services\StarSenderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
-class RegistrationController extends Controller
+class ForgotPasswordController extends Controller
 {
     private const OTP_EXPIRY_MINUTES = 5;
     private const OTP_RESEND_LIMIT = 3;
     private const OTP_RESEND_WINDOW_MINUTES = 10;
     private const OTP_MAX_ATTEMPTS = 5;
 
-    public function showRegister()
+    public function showRequest()
     {
-        return view('auth.register');
+        return view('auth.forgot-password');
     }
 
-    public function checkIdentifier(Request $request, StarSenderService $starSender)
+    public function sendOtp(Request $request, StarSenderService $starSender)
     {
         $request->validate([
-            'identifier_type' => 'required|in:email,whatsapp',
-            'identifier' => 'required|string|max:255',
+            'email' => 'required|email',
         ]);
 
-        $identifierType = $request->input('identifier_type');
-        $identifier = trim((string) $request->input('identifier'));
+        $email = strtolower(trim((string) $request->input('email')));
+        $user = User::query()->where('email', $email)->first();
 
-        if ($identifierType === 'email') {
-            $identifier = strtolower($identifier);
-            if (!filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-                return back()->withErrors(['msg' => 'Format email tidak valid.'])->withInput();
-            }
-        } else {
-            $identifier = $this->normalizePhone($identifier);
-            if ($identifier === '') {
-                return back()->withErrors(['msg' => 'Nomor WhatsApp tidak valid.'])->withInput();
-            }
-        }
-
-        $user = $this->findUserByIdentifier($identifierType, $identifier);
         if (!$user) {
-            return back()->withErrors(['msg' => 'Email atau WhatsApp tidak terdaftar dalam sistem.'])->withInput();
+            return back()->withErrors(['msg' => 'Email tidak terdaftar.'])->withInput();
         }
 
-        if (!$this->isSubscriptionActive($user)) {
-            return back()->withErrors(['msg' => 'Subscription Anda belum aktif atau sudah expired.'])->withInput();
-        }
-
-        if ($user->password_created_at) {
-            return back()->withErrors(['msg' => 'Anda sudah terdaftar. Silakan login.'])->withInput();
+        if (!$user->password_created_at) {
+            return back()->withErrors(['msg' => 'Akun belum aktif. Silakan daftar terlebih dahulu.'])->withInput();
         }
 
         if (empty($user->phone)) {
@@ -71,10 +52,15 @@ class RegistrationController extends Controller
         }
 
         $otpCode = (string) random_int(100000, 999999);
+        $phone = $this->normalizePhone($user->phone);
+        if ($phone === '') {
+            return back()->withErrors(['msg' => 'Nomor WhatsApp tidak valid. Hubungi admin.'])->withInput();
+        }
+
         $otpId = DB::table('otp_verifications')->insertGetId([
             'user_id' => $user->id,
-            'identifier' => $identifier,
-            'identifier_type' => $identifierType,
+            'identifier' => $phone,
+            'identifier_type' => 'whatsapp',
             'otp_code' => Hash::make($otpCode),
             'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
             'created_at' => now(),
@@ -82,7 +68,7 @@ class RegistrationController extends Controller
         ]);
 
         $message = $this->buildOtpMessage($user->name ?: 'User', $otpCode);
-        $sendOk = $starSender->sendOtp($this->normalizePhone($user->phone), $message);
+        $sendOk = $starSender->sendOtp($phone, $message);
 
         if (!$sendOk) {
             DB::table('otp_verifications')->where('id', $otpId)->delete();
@@ -90,26 +76,25 @@ class RegistrationController extends Controller
         }
 
         session([
-            'registration_user_id' => $user->id,
-            'registration_identifier' => $identifier,
-            'registration_identifier_type' => $identifierType,
-            'registration_phone' => $this->normalizePhone($user->phone),
-            'registration_phone_masked' => $this->maskPhone($user->phone),
-            'registration_otp_id' => $otpId,
+            'forgot_user_id' => $user->id,
+            'forgot_email' => $email,
+            'forgot_phone' => $phone,
+            'forgot_phone_masked' => $this->maskPhone($user->phone),
+            'forgot_otp_id' => $otpId,
         ]);
 
-        return redirect()->route('register.verify')
+        return redirect()->route('password.forgot.verify')
             ->with('success', 'Kode verifikasi telah dikirim ke WhatsApp Anda.');
     }
 
     public function showVerify()
     {
-        if (!session('registration_user_id')) {
-            return redirect()->route('register');
+        if (!session('forgot_user_id')) {
+            return redirect()->route('password.forgot');
         }
 
-        return view('auth.verify-otp', [
-            'phone_masked' => session('registration_phone_masked'),
+        return view('auth.forgot-verify-otp', [
+            'phone_masked' => session('forgot_phone_masked'),
         ]);
     }
 
@@ -119,18 +104,17 @@ class RegistrationController extends Controller
             'otp' => 'required|digits:6',
         ]);
 
-        $userId = session('registration_user_id');
-        $identifier = session('registration_identifier');
-        $identifierType = session('registration_identifier_type');
+        $userId = session('forgot_user_id');
+        $phone = session('forgot_phone');
 
-        if (!$userId || !$identifier || !$identifierType) {
-            return redirect()->route('register');
+        if (!$userId || !$phone) {
+            return redirect()->route('password.forgot');
         }
 
         $record = DB::table('otp_verifications')
             ->where('user_id', $userId)
-            ->where('identifier', $identifier)
-            ->where('identifier_type', $identifierType)
+            ->where('identifier', $phone)
+            ->where('identifier_type', 'whatsapp')
             ->whereNull('verified_at')
             ->orderByDesc('id')
             ->first();
@@ -162,21 +146,20 @@ class RegistrationController extends Controller
         ]);
 
         session([
-            'registration_verified' => true,
-            'registration_verified_at' => now()->toDateTimeString(),
+            'forgot_verified' => true,
+            'forgot_verified_at' => now()->toDateTimeString(),
         ]);
 
-        return redirect()->route('register.password');
+        return redirect()->route('password.forgot.reset');
     }
 
     public function resendOtp(StarSenderService $starSender)
     {
-        $userId = session('registration_user_id');
-        $identifier = session('registration_identifier');
-        $identifierType = session('registration_identifier_type');
+        $userId = session('forgot_user_id');
+        $phone = session('forgot_phone');
 
-        if (!$userId || !$identifier || !$identifierType) {
-            return redirect()->route('register');
+        if (!$userId || !$phone) {
+            return redirect()->route('password.forgot');
         }
 
         $recentCount = DB::table('otp_verifications')
@@ -189,15 +172,15 @@ class RegistrationController extends Controller
         }
 
         $user = User::query()->find($userId);
-        if (!$user || empty($user->phone)) {
-            return back()->withErrors(['msg' => 'Nomor WhatsApp tidak ditemukan. Hubungi admin.']);
+        if (!$user) {
+            return back()->withErrors(['msg' => 'User tidak ditemukan.']);
         }
 
         $otpCode = (string) random_int(100000, 999999);
         $otpId = DB::table('otp_verifications')->insertGetId([
             'user_id' => $userId,
-            'identifier' => $identifier,
-            'identifier_type' => $identifierType,
+            'identifier' => $phone,
+            'identifier_type' => 'whatsapp',
             'otp_code' => Hash::make($otpCode),
             'expires_at' => now()->addMinutes(self::OTP_EXPIRY_MINUTES),
             'created_at' => now(),
@@ -205,90 +188,55 @@ class RegistrationController extends Controller
         ]);
 
         $message = $this->buildOtpMessage($user->name ?: 'User', $otpCode);
-        $sendOk = $starSender->sendOtp($this->normalizePhone($user->phone), $message);
+        $sendOk = $starSender->sendOtp($phone, $message);
 
         if (!$sendOk) {
             DB::table('otp_verifications')->where('id', $otpId)->delete();
             return back()->withErrors(['msg' => 'Gagal mengirim kode verifikasi. Coba lagi.']);
         }
 
-        session(['registration_otp_id' => $otpId]);
+        session(['forgot_otp_id' => $otpId]);
 
         return back()->with('success', 'Kode verifikasi telah dikirim ulang.');
     }
 
-    public function showPassword()
+    public function showReset()
     {
-        if (!session('registration_verified') || !session('registration_user_id')) {
-            return redirect()->route('register');
+        if (!session('forgot_verified') || !session('forgot_user_id')) {
+            return redirect()->route('password.forgot');
         }
 
-        return view('auth.create-password');
+        return view('auth.forgot-reset-password');
     }
 
-    public function createPassword(Request $request)
+    public function resetPassword(Request $request)
     {
-        if (!session('registration_verified') || !session('registration_user_id')) {
-            return redirect()->route('register');
+        if (!session('forgot_verified') || !session('forgot_user_id')) {
+            return redirect()->route('password.forgot');
         }
 
         $request->validate([
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $user = User::query()->find(session('registration_user_id'));
+        $user = User::query()->find(session('forgot_user_id'));
         if (!$user) {
-            return redirect()->route('register');
+            return redirect()->route('password.forgot');
         }
 
         $user->password = Hash::make((string) $request->input('password'));
         $user->password_created_at = now();
-
-        if (session('registration_identifier_type') === 'email') {
-            $user->email_verified_at = now();
-        }
-
         $user->save();
 
-        $this->clearRegistrationSession();
+        $this->clearForgotSession();
 
-        Auth::login($user);
-        session()->regenerate();
-        session(['license_authenticated' => true]);
-
-        return redirect()->route('dashboard')
-            ->with('success', 'Password berhasil dibuat. Selamat datang!');
-    }
-
-    private function findUserByIdentifier(string $type, string $identifier): ?User
-    {
-        if ($type === 'email') {
-            return User::query()->where('email', $identifier)->first();
-        }
-
-        return User::query()->where('phone', $identifier)->first();
-    }
-
-    private function isSubscriptionActive(User $user): bool
-    {
-        if (strtolower((string) $user->subscription_status) !== 'active') {
-            return false;
-        }
-
-        if ($user->subscription_end_date) {
-            try {
-                return !Carbon::parse($user->subscription_end_date)->isPast();
-            } catch (\Throwable $e) {
-                return true;
-            }
-        }
-
-        return true;
+        return redirect()->route('login')
+            ->with('success', 'Password berhasil direset. Silakan login.');
     }
 
     private function normalizePhone(string $input): string
     {
-        $digits = preg_replace('/\D+/', '', $input);
+        $digits = preg_replace('/\\D+/', '', $input);
         if (!$digits) {
             return '';
         }
@@ -319,17 +267,16 @@ class RegistrationController extends Controller
         return "SIMAK\n\nHai {$name},\nKode verifikasi Anda: {$otpCode}\n\nBerlaku 5 menit.\nAbaikan jika bukan Anda.";
     }
 
-    private function clearRegistrationSession(): void
+    private function clearForgotSession(): void
     {
         session()->forget([
-            'registration_user_id',
-            'registration_identifier',
-            'registration_identifier_type',
-            'registration_phone',
-            'registration_phone_masked',
-            'registration_otp_id',
-            'registration_verified',
-            'registration_verified_at',
+            'forgot_user_id',
+            'forgot_email',
+            'forgot_phone',
+            'forgot_phone_masked',
+            'forgot_otp_id',
+            'forgot_verified',
+            'forgot_verified_at',
         ]);
     }
 }

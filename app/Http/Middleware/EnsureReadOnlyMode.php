@@ -39,6 +39,8 @@ class EnsureReadOnlyMode
             'login',
             'register',
             'register/*',
+            'forgot-password',
+            'forgot-password/*',
             'reset',
             'activate',
             'license/*',

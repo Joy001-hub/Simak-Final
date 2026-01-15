@@ -348,6 +348,10 @@
 
                     <div class="text-center mt-6 space-y-3">
                         <p class="text-sm text-slate-500">
+                            Lupa password? <a href="{{ route('password.forgot') }}"
+                                class="text-[#b91c3b] font-semibold hover:underline">Reset di sini</a>
+                        </p>
+                        <p class="text-sm text-slate-500">
                             Belum punya akun? <a href="{{ route('register') }}"
                                 class="text-[#b91c3b] font-semibold hover:underline">Daftar di sini</a>
                         </p>

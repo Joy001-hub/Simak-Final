@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buat Password - SIMAK</title>
+    <title>Verifikasi OTP - SIMAK</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css'])
     <style>
@@ -76,9 +76,16 @@
                     <img class="mx-auto mb-6" src="{{ asset('/logo-app.png') }}" alt="SIMAK Logo"
                         onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
                         style="width: 160px; height: auto;">
-                    <h1 class="text-2xl font-bold text-slate-900 mb-2">Buat Password</h1>
-                    <p class="text-slate-500 text-sm">Password akan digunakan untuk login otomatis di SIMAK.</p>
+                    <h1 class="text-2xl font-bold text-slate-900 mb-2">Verifikasi OTP</h1>
+                    <p class="text-slate-500 text-sm">Kode dikirim ke {{ $phone_masked ?? 'WhatsApp Anda' }}</p>
                 </div>
+
+                @if (session('success'))
+                    <div class="mx-6 mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl p-4 text-sm"
+                        role="alert">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
                 @if ($errors->any())
                     <div class="mx-6 mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm"
@@ -87,31 +94,52 @@
                     </div>
                 @endif
 
-                <form action="{{ route('register.password.store') }}" method="POST" class="px-8 pb-8 space-y-5">
+                <form action="{{ route('password.forgot.verify.submit') }}" method="POST" class="px-8 pb-6 space-y-5">
                     @csrf
-
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="password">Password Baru</label>
-                        <input type="password" name="password" id="password" required
-                            class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
-                            placeholder="Minimal 8 karakter">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="password_confirmation">Konfirmasi Password</label>
-                        <input type="password" name="password_confirmation" id="password_confirmation" required
-                            class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
-                            placeholder="Ulangi password">
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="otp">Kode OTP</label>
+                        <input type="text" name="otp" id="otp" required maxlength="6" inputmode="numeric"
+                            class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none text-center tracking-[0.3em]"
+                            placeholder="000000">
                     </div>
 
                     <button type="submit"
                         class="btn-primary w-full text-white font-semibold py-4 rounded-xl flex items-center justify-center">
-                        Simpan Password
+                        Verifikasi
                     </button>
                 </form>
+
+                <div class="px-8 pb-8 flex items-center justify-between text-sm text-slate-500">
+                    <form action="{{ route('password.forgot.resend') }}" method="POST">
+                        @csrf
+                        <button type="submit" id="resend-btn"
+                            class="text-[#b91c3b] font-semibold hover:underline" disabled>Kirim ulang (02:00)</button>
+                    </form>
+                    <a href="{{ route('password.forgot') }}" class="hover:underline">Kembali</a>
+                </div>
             </div>
         </div>
     </div>
+
+    <script>
+        const resendBtn = document.getElementById('resend-btn');
+        let remaining = 120;
+
+        function tick() {
+            if (remaining <= 0) {
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Kirim ulang';
+                return;
+            }
+            const minutes = Math.floor(remaining / 60).toString().padStart(2, '0');
+            const seconds = (remaining % 60).toString().padStart(2, '0');
+            resendBtn.textContent = `Kirim ulang (${minutes}:${seconds})`;
+            remaining -= 1;
+            setTimeout(tick, 1000);
+        }
+
+        tick();
+    </script>
 </body>
 
 </html>
