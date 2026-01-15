@@ -51,6 +51,12 @@ class SejoliWebhookController extends Controller
         }
 
         $payloadData = $request->json()->all();
+        if (empty($payloadData) && is_string($payload) && trim($payload) !== '') {
+            $decoded = json_decode($payload, true);
+            if (is_array($decoded)) {
+                $payloadData = $decoded;
+            }
+        }
         $event = $eventHeader !== '' ? $eventHeader : (string) ($payloadData['event'] ?? '');
 
         $identifiers = $this->extractIdentifiers($payloadData);
@@ -142,6 +148,10 @@ class SejoliWebhookController extends Controller
         }
 
         try {
+            $payloadJson = is_string($payload) && trim($payload) !== ''
+                ? $payload
+                : json_encode($payloadData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
             DB::table('sejoli_webhook_events')->insert([
                 'event' => $event,
                 'user_id' => $identifiers['user_id'],
@@ -151,7 +161,7 @@ class SejoliWebhookController extends Controller
                 'end_date' => $endDate,
                 'email' => $userEmail,
                 'phone' => $userPhone,
-                'payload' => $payloadData,
+                'payload' => $payloadJson,
                 'signature' => $normalizedSignature,
                 'received_at' => now(),
                 'created_at' => now(),
@@ -277,7 +287,7 @@ class SejoliWebhookController extends Controller
                 'no_hp',
                 'no_telp',
             ] as $key) {
-                if (!empty($data['user'][$key])) {
+                if (isset($data['user'][$key]) && is_scalar($data['user'][$key]) && $data['user'][$key] !== '') {
                     $candidates[] = $data['user'][$key];
                 }
             }
@@ -285,7 +295,7 @@ class SejoliWebhookController extends Controller
 
         if (isset($data['subscription']) && is_array($data['subscription'])) {
             foreach (['phone', 'customer_phone', 'billing_phone'] as $key) {
-                if (!empty($data['subscription'][$key])) {
+                if (isset($data['subscription'][$key]) && is_scalar($data['subscription'][$key]) && $data['subscription'][$key] !== '') {
                     $candidates[] = $data['subscription'][$key];
                 }
             }
@@ -293,7 +303,7 @@ class SejoliWebhookController extends Controller
 
         if (isset($data['order']) && is_array($data['order'])) {
             foreach (['phone', 'customer_phone', 'billing_phone'] as $key) {
-                if (!empty($data['order'][$key])) {
+                if (isset($data['order'][$key]) && is_scalar($data['order'][$key]) && $data['order'][$key] !== '') {
                     $candidates[] = $data['order'][$key];
                 }
             }
