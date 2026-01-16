@@ -350,7 +350,7 @@ class DataDummySeeders extends Seeder
                         $paidAt = $dueDate->copy()->addDays(rand(-3, 5));
                         $paidPart = $amount;
                     } elseif ($roll <= 82) {
-                        $status = 'unpaid'; // partial not allowed in PostgreSQL enum
+                        $status = 'partial';
                         $paidPart = (int) round($amount * (rand(35, 70) / 100));
                         $remainingAmt = max(0, $amount - $paidPart);
                         if ($remainingAmt <= 0) {
@@ -367,7 +367,7 @@ class DataDummySeeders extends Seeder
 
                 if ($status === 'paid') {
                     $paidTotal += $amount;
-                } elseif ($status === 'unpaid' && $paidPart > 0) {
+                } elseif ($status === 'partial') {
                     $paidTotal += $paidPart;
                 }
 
@@ -473,7 +473,7 @@ class DataDummySeeders extends Seeder
                 $payments[] = [
                     'due_date' => $bankDue->toDateString(),
                     'amount' => $price - $dpNominal,
-                    'status' => 'unpaid', // kpr_bank not valid in PostgreSQL
+                    'status' => 'kpr_bank',
                     'note' => 'Pencairan KPR Bank',
                     'paid_at' => null,
                     'created_at' => $now,
@@ -484,10 +484,8 @@ class DataDummySeeders extends Seeder
             } else {
 
                 $paidTotal = $dpPaidAmount;
-                // Use 'canceled' status (valid in database enum)
-                $saleData['status'] = 'canceled';
-                // 50% chance of having refund
-                $saleData['refund_amount'] = rand(0, 1)
+                $saleData['status'] = rand(0, 1) ? Sale::STATUS_CANCELED_REFUND : Sale::STATUS_CANCELED_HAPUS;
+                $saleData['refund_amount'] = $saleData['status'] === Sale::STATUS_CANCELED_REFUND
                     ? (float) round($dpPaidAmount * 0.6, 2)
                     : null;
                 $saleData['status_before_cancel'] = 'Pengajuan KPR bermasalah';
@@ -511,7 +509,7 @@ class DataDummySeeders extends Seeder
             unset($p);
         }
 
-        if ($saleData['status'] === 'canceled') {
+        if (in_array($saleData['status'], [Sale::STATUS_CANCELED_HAPUS, Sale::STATUS_CANCELED_REFUND, Sale::STATUS_CANCELED_OPER_KREDIT, 'canceled'], true)) {
             $saleData['outstanding_amount'] = 0;
             $lotStatus = 'available';
         }
