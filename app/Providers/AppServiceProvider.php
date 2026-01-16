@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(TenantContext::class, fn () => new TenantContext());
+        $this->app->singleton(TenantContext::class, fn() => new TenantContext());
     }
 
     public function boot(): void
@@ -36,7 +36,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         try {
-            View::composer('*', function ($view) {
+            // Target specific layouts to avoid performance issues with wildcard '*'
+            // Wildcard causes the query to run for EVERY partial view included
+            View::composer(['layouts.app'], function ($view) {
                 $companyProfile = Schema::hasTable('company_profiles') ? CompanyProfile::first() : null;
                 $logoConfigPath = config('company.logo_url', '/logo-app.png');
                 $logoPath = asset($logoConfigPath);
@@ -65,12 +67,12 @@ class AppServiceProvider extends ServiceProvider
                         ->whereDate('due_date', '<', $today)
                         ->whereHas('sale.buyer')
                         ->get()
-                        ->groupBy(fn ($payment) => $payment->sale?->buyer_id)
+                        ->groupBy(fn($payment) => $payment->sale?->buyer_id)
                         ->map(function ($payments) {
                             $totalAmount = $payments->sum('amount');
                             $overdueCount = $payments->count();
                             $oldestPayment = $payments->sortBy('due_date')->first();
-                            $kavlingList = $payments->groupBy(fn ($p) => $p->sale_id)
+                            $kavlingList = $payments->groupBy(fn($p) => $p->sale_id)
                                 ->map(function ($salePayments) {
                                     $sale = $salePayments->first()->sale;
                                     $lot = $sale?->lot;
@@ -131,6 +133,7 @@ class AppServiceProvider extends ServiceProvider
                     ->with('licenseGraceDays', $licenseGraceDays);
             });
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('View Composer Error: ' . $e->getMessage());
         }
     }
 }
