@@ -416,15 +416,20 @@ class PenjualanController extends Controller
                     'email' => $companyProfile->email ?? '-',
                     'logo_url' => $companyProfile->logo_path ? asset('storage/' . $companyProfile->logo_path) : null,
                 ],
-                'schedule' => $sale->payments->sortBy('due_date')->values()->map(function ($p) {
+                'schedule' => $sale->payments->sortBy(function ($p) {
+                    return $p->due_date ? $p->due_date->timestamp : 0;
+                })->values()->map(function ($p, $index) {
                     return [
-                        'no' => $p->id,
+                        'no' => $index + 1, // Change from $p->id to sequential number
+                        'id' => $p->id,     // Keep ID if needed elsewhere
                         'jatuh_tempo' => optional($p->due_date)?->format('d M Y'),
                         'jumlah' => $p->amount,
                         'status' => $p->status,
                     ];
                 })->toArray(),
-                'payments' => $sale->payments->sortBy('due_date')->values()->map(function ($p) {
+                'payments' => $sale->payments->sortBy(function ($p) {
+                    return $p->due_date ? $p->due_date->timestamp : 0;
+                })->values()->map(function ($p) {
                     return [
                         'tanggal' => optional($p->due_date)?->format('d M Y'),
                         'keterangan' => $p->note ?? 'Pembayaran',

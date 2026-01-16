@@ -193,7 +193,7 @@
                         </thead>
                         <tbody>
                             @php $rowNum = 0; @endphp
-                            @forelse ($sale->payments as $payment)
+                            @forelse ($sale->payments->sortBy(function($p){ return $p->due_date ? $p->due_date->timestamp : 0; }) as $payment)
                                 @php
                                     $note = $payment->note ?? '';
                                     $isSchedule = $note === null || str_starts_with($note, 'Angsuran') || str_starts_with($note, 'Angsuran Bank');
