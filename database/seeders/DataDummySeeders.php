@@ -484,8 +484,10 @@ class DataDummySeeders extends Seeder
             } else {
 
                 $paidTotal = $dpPaidAmount;
-                $saleData['status'] = rand(0, 1) ? Sale::STATUS_CANCELED_REFUND : Sale::STATUS_CANCELED_HAPUS;
-                $saleData['refund_amount'] = $saleData['status'] === Sale::STATUS_CANCELED_REFUND
+                // Use 'canceled' status (valid in database enum)
+                $saleData['status'] = 'canceled';
+                // 50% chance of having refund
+                $saleData['refund_amount'] = rand(0, 1)
                     ? (float) round($dpPaidAmount * 0.6, 2)
                     : null;
                 $saleData['status_before_cancel'] = 'Pengajuan KPR bermasalah';
@@ -509,7 +511,7 @@ class DataDummySeeders extends Seeder
             unset($p);
         }
 
-        if (in_array($saleData['status'], [Sale::STATUS_CANCELED_HAPUS, Sale::STATUS_CANCELED_REFUND, Sale::STATUS_CANCELED_OPER_KREDIT, 'canceled'], true)) {
+        if ($saleData['status'] === 'canceled') {
             $saleData['outstanding_amount'] = 0;
             $lotStatus = 'available';
         }
