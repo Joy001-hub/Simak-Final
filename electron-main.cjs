@@ -6,7 +6,7 @@ const crypto = require('node:crypto');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 const devServerUrl = process.env.DEV_SERVER_URL || process.env.VITE_DEV_SERVER_URL || process.env.VITE_DEV_URL;
-const defaultProdUrl = process.env.ELECTRON_DEFAULT_URL || 'https://simak-final-production.up.railway.app';
+const defaultProdUrl = process.env.ELECTRON_DEFAULT_URL || 'https://portal.kavling.pro';
 const shouldUseDefaultUrl = process.env.NODE_ENV === 'production' || app.isPackaged;
 const electronAppUrl = process.env.ELECTRON_APP_URL || process.env.APP_URL || (shouldUseDefaultUrl ? defaultProdUrl : '');
 const retryScheduleMs = [2000, 5000, 10000, 20000, 30000];
