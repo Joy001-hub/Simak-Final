@@ -56,7 +56,7 @@ class DataManagementController extends Controller
 
     public function loadDemo()
     {
-        return $this->safeExecute(function () {
+        try {
             DB::transaction(function () {
                 $this->resetData();
                 (new DataDummySeeders())->run();
@@ -64,7 +64,12 @@ class DataManagementController extends Controller
             });
             $this->clearCaches();
             return redirect()->route('data.index')->with('success', 'Data demo berhasil dibuat.');
-        }, 'data.index', 'Gagal membuat data demo. Silakan coba lagi.');
+        } catch (\Throwable $e) {
+            logger()->error('LoadDemo Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->route('data.index')->with('error', 'Gagal membuat data demo: ' . $e->getMessage());
+        }
     }
 
     public function reset()
