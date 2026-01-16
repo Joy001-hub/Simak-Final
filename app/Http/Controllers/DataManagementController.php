@@ -278,20 +278,31 @@ class DataManagementController extends Controller
     private function resetData(): void
     {
         $driver = DB::getDriverName();
-        if ($driver === 'sqlite') {
+
+        if ($driver === 'pgsql') {
+            // PostgreSQL: use TRUNCATE with CASCADE
+            DB::statement('TRUNCATE TABLE payments, sales, lots, projects, buyers, marketers, company_profiles RESTART IDENTITY CASCADE');
+        } elseif ($driver === 'sqlite') {
             DB::statement('PRAGMA foreign_keys = OFF');
-        }
-
-        Payment::query()->delete();
-        Sale::query()->delete();
-        Lot::query()->delete();
-        Project::query()->delete();
-        Buyer::query()->delete();
-        Marketer::query()->delete();
-        CompanyProfile::query()->delete();
-
-        if ($driver === 'sqlite') {
+            Payment::query()->delete();
+            Sale::query()->delete();
+            Lot::query()->delete();
+            Project::query()->delete();
+            Buyer::query()->delete();
+            Marketer::query()->delete();
+            CompanyProfile::query()->delete();
             DB::statement('PRAGMA foreign_keys = ON');
+        } else {
+            // MySQL and others
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+            Payment::truncate();
+            Sale::truncate();
+            Lot::truncate();
+            Project::truncate();
+            Buyer::truncate();
+            Marketer::truncate();
+            CompanyProfile::truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
         }
     }
 

@@ -33,14 +33,20 @@ class DataDummySeeders extends Seeder
 
     private function resetTables(): void
     {
-        Schema::disableForeignKeyConstraints();
-        Payment::truncate();
-        Sale::truncate();
-        Lot::truncate();
-        Project::truncate();
-        Buyer::truncate();
-        Marketer::truncate();
-        Schema::enableForeignKeyConstraints();
+        $driver = \Illuminate\Support\Facades\DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            \Illuminate\Support\Facades\DB::statement('TRUNCATE TABLE payments, sales, lots, projects, buyers, marketers RESTART IDENTITY CASCADE');
+        } else {
+            Schema::disableForeignKeyConstraints();
+            Payment::truncate();
+            Sale::truncate();
+            Lot::truncate();
+            Project::truncate();
+            Buyer::truncate();
+            Marketer::truncate();
+            Schema::enableForeignKeyConstraints();
+        }
     }
 
     private function seedProjects(): array
@@ -132,15 +138,68 @@ class DataDummySeeders extends Seeder
     private function seedBuyers(): array
     {
         $firstNames = [
-            'Ahmad', 'Budi', 'Cahya', 'Dewi', 'Eka', 'Fitri', 'Galih', 'Hana', 'Irfan', 'Joko',
-            'Kartika', 'Lina', 'Maya', 'Nanda', 'Oscar', 'Putri', 'Reza', 'Sari', 'Taufik', 'Umi',
-            'Vera', 'Wawan', 'Yani', 'Zainal', 'Agus', 'Bambang', 'Clara', 'Dian', 'Endang', 'Fajar',
-            'Gunawan', 'Hendra', 'Indah', 'Jihan', 'Kurnia', 'Lukman', 'Mega', 'Nurul', 'Oki', 'Pandu',
+            'Ahmad',
+            'Budi',
+            'Cahya',
+            'Dewi',
+            'Eka',
+            'Fitri',
+            'Galih',
+            'Hana',
+            'Irfan',
+            'Joko',
+            'Kartika',
+            'Lina',
+            'Maya',
+            'Nanda',
+            'Oscar',
+            'Putri',
+            'Reza',
+            'Sari',
+            'Taufik',
+            'Umi',
+            'Vera',
+            'Wawan',
+            'Yani',
+            'Zainal',
+            'Agus',
+            'Bambang',
+            'Clara',
+            'Dian',
+            'Endang',
+            'Fajar',
+            'Gunawan',
+            'Hendra',
+            'Indah',
+            'Jihan',
+            'Kurnia',
+            'Lukman',
+            'Mega',
+            'Nurul',
+            'Oki',
+            'Pandu',
         ];
         $lastNames = [
-            'Wijaya', 'Santoso', 'Kusuma', 'Purnama', 'Pratama', 'Hidayat', 'Saputra', 'Wibowo',
-            'Setiawan', 'Nugraha', 'Permana', 'Gunawan', 'Susanto', 'Budiman', 'Hartono', 'Suryadi',
-            'Prasetyo', 'Ramadhan', 'Utami', 'Handoko',
+            'Wijaya',
+            'Santoso',
+            'Kusuma',
+            'Purnama',
+            'Pratama',
+            'Hidayat',
+            'Saputra',
+            'Wibowo',
+            'Setiawan',
+            'Nugraha',
+            'Permana',
+            'Gunawan',
+            'Susanto',
+            'Budiman',
+            'Hartono',
+            'Suryadi',
+            'Prasetyo',
+            'Ramadhan',
+            'Utami',
+            'Handoko',
         ];
         $cities = ['Jakarta Selatan', 'Jakarta Barat', 'Jakarta Timur', 'Bogor', 'Depok', 'Tangerang', 'Bekasi', 'Bandung'];
         $streets = ['Jl. Sudirman', 'Jl. Thamrin', 'Jl. Gatot Subroto', 'Jl. Kemang', 'Jl. Pondok Indah', 'Jl. Kelapa Gading'];

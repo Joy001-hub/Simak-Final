@@ -2,7 +2,7 @@
     "$schema": "https://www.schemastore.org/package.json",
     "private": true,
     "name": "kavling-management-pro",
-    "version": "3.1.2",
+    "version": "2.5.0",
     "description": "Kavling Management Pro - Web Application",
     "repository": {
         "type": "git",
