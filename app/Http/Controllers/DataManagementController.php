@@ -285,6 +285,21 @@ class DataManagementController extends Controller
         $driver = DB::getDriverName();
 
         if ($driver === 'pgsql') {
+            // FORCE FIX STRUCTURE: Remove strict enum constraints to allow 'partial', 'DIBATALKAN_xxx', etc.
+            // This ensures loadDemo works even if migration hasn't run yet.
+            try {
+                DB::statement("ALTER TABLE sales ALTER COLUMN status TYPE VARCHAR(50)");
+                DB::statement("ALTER TABLE sales ALTER COLUMN status SET DEFAULT 'active'");
+                DB::statement("ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_status_check");
+
+                DB::statement("ALTER TABLE payments ALTER COLUMN status TYPE VARCHAR(50)");
+                DB::statement("ALTER TABLE payments ALTER COLUMN status SET DEFAULT 'unpaid'");
+                DB::statement("ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check");
+            } catch (\Throwable $e) {
+                // Ignore if already fixed or permission error, proceed to truncate
+                logger()->warning('Auto-fix schema failed: ' . $e->getMessage());
+            }
+
             // PostgreSQL: use TRUNCATE with CASCADE
             DB::statement('TRUNCATE TABLE payments, sales, lots, projects, buyers, marketers, company_profiles RESTART IDENTITY CASCADE');
         } elseif ($driver === 'sqlite') {

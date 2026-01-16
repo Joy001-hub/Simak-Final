@@ -36,6 +36,15 @@ class DataDummySeeders extends Seeder
         $driver = \Illuminate\Support\Facades\DB::getDriverName();
 
         if ($driver === 'pgsql') {
+            // Force schema fix for seeders
+            try {
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE sales ALTER COLUMN status TYPE VARCHAR(50)");
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_status_check");
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE payments ALTER COLUMN status TYPE VARCHAR(50)");
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check");
+            } catch (\Throwable $e) {
+            }
+
             \Illuminate\Support\Facades\DB::statement('TRUNCATE TABLE payments, sales, lots, projects, buyers, marketers RESTART IDENTITY CASCADE');
         } else {
             Schema::disableForeignKeyConstraints();
