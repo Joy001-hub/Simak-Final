@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Aktivasi - SIMAK</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <x-vite-assets />
     <style>
         * {
             font-family: 'Inter', sans-serif;
@@ -146,7 +146,8 @@
                         onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
                         style="width: 160px; height: auto;">
                     <h1 class="text-2xl font-bold text-slate-900 mb-2">Reset Aktivasi</h1>
-                    <p class="text-slate-500 text-sm">Reset aktivasi lokal subscription Sejoli untuk mengaktifkan ulang aplikasi.</p>
+                    <p class="text-slate-500 text-sm">Reset aktivasi lokal subscription Sejoli untuk mengaktifkan ulang
+                        aplikasi.</p>
                 </div>
 
                 {{-- Alert Messages --}}
@@ -207,7 +208,8 @@
                         <input type="number" name="product_id" id="product_id" required inputmode="numeric"
                             class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
                             placeholder="Masukkan Product ID" value="{{ old('product_id') }}">
-                        <p class="mt-2 text-xs text-slate-400">Gunakan User ID &amp; Product ID dari Sejoli External API.</p>
+                        <p class="mt-2 text-xs text-slate-400">Gunakan User ID &amp; Product ID dari Sejoli External
+                            API.</p>
                     </div>
 
                     <button type="submit" id="submit-btn"

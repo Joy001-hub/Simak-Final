@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Akun - SIMAK</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <x-vite-assets />
     <style>
         * {
             font-family: 'Inter', sans-serif;
@@ -94,8 +94,7 @@
                 @endif
 
                 @if ($errors->any())
-                    <div class="mx-6 mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm"
-                        role="alert">
+                    <div class="mx-6 mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm" role="alert">
                         {{ $errors->first() }}
                     </div>
                 @endif
@@ -118,7 +117,8 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-2" for="identifier">Email atau WhatsApp</label>
+                        <label class="block text-sm font-medium text-slate-700 mb-2" for="identifier">Email atau
+                            WhatsApp</label>
                         <input type="text" name="identifier" id="identifier" required
                             class="input-field w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none"
                             placeholder="contoh@email.com" value="{{ old('identifier') }}">

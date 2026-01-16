@@ -1,30 +1,32 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <x-vite-assets />
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 font-sans">
+
+<body
+    class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 font-sans">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
 
     <div class="relative z-10 w-full max-w-md">
         <div class="bg-white/95 backdrop-blur rounded-2xl shadow-2xl border border-white/30 overflow-hidden">
             {{-- Header --}}
             <div class="px-8 pt-8 pb-6 text-center border-b border-slate-200">
-                <img class="app-logo-img mx-auto mb-4"
-                     src="{{ asset('/logo-app.png') }}"
-                     alt="SIMAK Logo"
-                     onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
-                     style="width:120px; height:auto;">
+                <img class="app-logo-img mx-auto mb-4" src="{{ asset('/logo-app.png') }}" alt="SIMAK Logo"
+                    onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
+                    style="width:120px; height:auto;">
                 <h1 class="text-2xl font-bold text-slate-900">Login</h1>
                 <p class="text-sm text-slate-600 mt-2">Masukkan User ID &amp; Product ID Anda untuk melanjutkan.</p>
             </div>
 
             @if (session('success'))
-                <div class="mx-6 mt-4 bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 text-sm" role="alert">
+                <div class="mx-6 mt-4 bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 text-sm"
+                    role="alert">
                     {{ session('success') }}
                 </div>
             @endif
@@ -51,7 +53,8 @@
                     <input type="number" name="product_id" id="product_id" required inputmode="numeric"
                         class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                         placeholder="Masukkan Product ID" value="{{ old('product_id') }}">
-                    <p class="mt-2 text-xs text-slate-500">Gunakan User ID &amp; Product ID dari Sejoli External API.</p>
+                    <p class="mt-2 text-xs text-slate-500">Gunakan User ID &amp; Product ID dari Sejoli External API.
+                    </p>
                 </div>
 
                 <button type="submit"
@@ -64,7 +67,8 @@
             <div class="px-8 pb-8 text-center">
                 <p class="text-sm text-slate-600">
                     Belum aktivasi?
-                    <a href="{{ route('license.activate.form') }}" class="font-semibold text-[#b91c3b] hover:text-[#a01835] underline">
+                    <a href="{{ route('license.activate.form') }}"
+                        class="font-semibold text-[#b91c3b] hover:text-[#a01835] underline">
                         aktivasi
                     </a>
                 </p>
@@ -137,7 +141,7 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const alerts = document.querySelectorAll('[role="alert"]');
             alerts.forEach(alert => {
                 setTimeout(() => {
@@ -153,4 +157,5 @@
         });
     </script>
 </body>
+
 </html>

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SIMAK</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <x-vite-assets />
     <style>
         * {
             font-family: 'Inter', sans-serif;
@@ -290,10 +290,10 @@
                 @endif
 
                 {{-- Form --}}
-            <form id="login-form" action="{{ route('auth.login') }}" method="POST" class="px-8 pb-8 space-y-5">
-                @csrf
-                <input type="hidden" name="device_id" id="device_id">
-                <input type="hidden" name="device_name" id="device_name">
+                <form id="login-form" action="{{ route('auth.login') }}" method="POST" class="px-8 pb-8 space-y-5">
+                    @csrf
+                    <input type="hidden" name="device_id" id="device_id">
+                    <input type="hidden" name="device_name" id="device_name">
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2" for="email">Email</label>
@@ -328,8 +328,10 @@
                                     clip-rule="evenodd" />
                             </svg>
                             <span class="tooltip-text">
-                                <strong>Dicentang:</strong> Sesi diingat, login otomatis pada pembukaan berikutnya.<br><br>
-                                <strong>Tidak dicentang:</strong> Sesi tidak disimpan dan akan diminta aktivasi/login ulang.
+                                <strong>Dicentang:</strong> Sesi diingat, login otomatis pada pembukaan
+                                berikutnya.<br><br>
+                                <strong>Tidak dicentang:</strong> Sesi tidak disimpan dan akan diminta aktivasi/login
+                                ulang.
                             </span>
                         </div>
                     </div>

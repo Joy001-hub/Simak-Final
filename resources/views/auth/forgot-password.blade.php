@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lupa Password - SIMAK</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <x-vite-assets />
     <style>
         * {
             font-family: 'Inter', sans-serif;
@@ -88,8 +88,7 @@
                 @endif
 
                 @if ($errors->any())
-                    <div class="mx-6 mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm"
-                        role="alert">
+                    <div class="mx-6 mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm" role="alert">
                         {{ $errors->first() }}
                     </div>
                 @endif

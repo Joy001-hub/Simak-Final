@@ -10,7 +10,7 @@
         rel="stylesheet" />
     <link rel="icon" type="image/svg+xml"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%239c0f2f'/%3E%3Cpath d='M18 20h28v8H34v16H18V20Zm14 8h14v16H32V28Z' fill='%23fff'/%3E%3C/svg%3E">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <x-vite-assets :includeJs="true" />
     <style>
         .content-area {
             flex: 1;
@@ -171,8 +171,7 @@
         <div class="content-area">
             <main class="page" style="padding-bottom: 80px;">
                 @if ($appReadOnly)
-                    <div class="card"
-                        style="border:1px solid #fed7aa; background:#fff7ed; border-left:4px solid #f59e0b;">
+                    <div class="card" style="border:1px solid #fed7aa; background:#fff7ed; border-left:4px solid #f59e0b;">
                         <div style="display:flex; gap:12px; align-items:flex-start;">
                             <div
                                 style="width:36px; height:36px; border-radius:10px; background:#f59e0b; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
