@@ -205,6 +205,18 @@
         </div>
     </div>
     <div id="toast" class="floating-alert" ari&times;live="polite" aria-label="Notifikasi"></div>
+    <script>
+        (function () {
+            const toast = document.getElementById('toast');
+            const message = @json(session('success') ?? session('error') ?? '');
+            if (toast && message) {
+                toast.textContent = message;
+                toast.classList.add('active');
+                setTimeout(() => toast.classList.remove('active'), 4000);
+            }
+        })();
+    </script>
+    @if (request()->routeIs('dashboard'))
     <div id="bellButton" class="bell-floating">
         <div class="bell-icon">
             <svg viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"
@@ -576,14 +588,6 @@
     </style>
     <script>
         (function () {
-            const toast = document.getElementById('toast');
-            const message = @json(session('success') ?? session('error') ?? '');
-            if (toast && message) {
-                toast.textContent = message;
-                toast.classList.add('active');
-                setTimeout(() => toast.classList.remove('active'), 4000);
-            }
-
             const bellButton = document.getElementById('bellButton');
             const bellPanel = document.getElementById('bellPanel');
             const bellClose = document.getElementById('bellClose');
@@ -607,15 +611,28 @@
             };
 
             const closeBellPanel = () => {
-                bellPanel?.classList.remove('active');
+                if (bellPanel) {
+                    bellPanel.classList.remove('active');
+                }
                 showBellButton();
             };
 
-            bellButton?.addEventListener('click', toggleBell);
-            bellClose?.addEventListener('click', closeBellPanel);
-            bellPanel?.addEventListener('click', (e) => { if (e.target === bellPanel) closeBellPanel(); });
+            if (bellButton) {
+                bellButton.addEventListener('click', toggleBell);
+            }
+            if (bellClose) {
+                bellClose.addEventListener('click', closeBellPanel);
+            }
+            if (bellPanel) {
+                bellPanel.addEventListener('click', (e) => {
+                    if (e.target === bellPanel) closeBellPanel();
+                });
+            }
         })();
+    </script>
+    @endif
 
+    <script>
         // Logout button on sidebar - redirects to login page
         (() => {
             const btn = document.getElementById('sidebarLogoutBtn');
@@ -647,6 +664,7 @@
     {{-- Include Maintenance Modal Component --}}
     @include('components.maintenance-modal')
 
+    @if (request()->routeIs('dashboard'))
     {{-- Kavling Selection Popup --}}
     <div id="kavlingPopupOverlay" class="kavling-popup-overlay">
         <div class="kavling-popup">
@@ -716,6 +734,7 @@
             });
         })();
     </script>
+    @endif
 
     {{-- Check untuk license validation failure --}}
     <script>
