@@ -307,10 +307,6 @@
                         <tbody id="paymentHistoryBody">
                             @forelse ($sale->payments()
                                 ->where('status', 'paid')
-                                ->where(function ($q) {
-                                    $q->whereNull('note')
-                                      ->orWhere('note', 'not like', 'Angsuran%');
-                                })
                                 ->orderBy('paid_at')
                                 ->get() as $pay)
                                 <tr data-date="{{ optional($pay->paid_at)->format('Y-m-d') ?? optional($pay->due_date)->format('Y-m-d') }}" data-note="{{ strtolower($pay->note ?? 'pembayaran') }}" data-amount="{{ $pay->amount }}">
