@@ -350,7 +350,7 @@ class DataDummySeeders extends Seeder
                         $paidAt = $dueDate->copy()->addDays(rand(-3, 5));
                         $paidPart = $amount;
                     } elseif ($roll <= 82) {
-                        $status = 'partial';
+                        $status = 'unpaid'; // partial not allowed in PostgreSQL enum
                         $paidPart = (int) round($amount * (rand(35, 70) / 100));
                         $remainingAmt = max(0, $amount - $paidPart);
                         if ($remainingAmt <= 0) {
@@ -367,7 +367,7 @@ class DataDummySeeders extends Seeder
 
                 if ($status === 'paid') {
                     $paidTotal += $amount;
-                } elseif ($status === 'partial') {
+                } elseif ($status === 'unpaid' && $paidPart > 0) {
                     $paidTotal += $paidPart;
                 }
 
@@ -473,7 +473,7 @@ class DataDummySeeders extends Seeder
                 $payments[] = [
                     'due_date' => $bankDue->toDateString(),
                     'amount' => $price - $dpNominal,
-                    'status' => 'kpr_bank',
+                    'status' => 'unpaid', // kpr_bank not valid in PostgreSQL
                     'note' => 'Pencairan KPR Bank',
                     'paid_at' => null,
                     'created_at' => $now,
