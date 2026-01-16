@@ -416,21 +416,21 @@ class PenjualanController extends Controller
                     'email' => $companyProfile->email ?? '-',
                     'logo_url' => $companyProfile->logo_path ? asset('storage/' . $companyProfile->logo_path) : null,
                 ],
-                'schedule' => $sale->payments->map(function ($p) {
+                'schedule' => $sale->payments->sortBy('due_date')->values()->map(function ($p) {
                     return [
                         'no' => $p->id,
                         'jatuh_tempo' => optional($p->due_date)?->format('d M Y'),
                         'jumlah' => $p->amount,
                         'status' => $p->status,
                     ];
-                })->values()->toArray(),
-                'payments' => $sale->payments->map(function ($p) {
+                })->toArray(),
+                'payments' => $sale->payments->sortBy('due_date')->values()->map(function ($p) {
                     return [
                         'tanggal' => optional($p->due_date)?->format('d M Y'),
                         'keterangan' => $p->note ?? 'Pembayaran',
                         'jumlah' => $p->amount,
                     ];
-                })->values()->toArray(),
+                })->toArray(),
             ];
 
             $buyers = Buyer::all();
