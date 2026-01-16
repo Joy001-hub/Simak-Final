@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @push('styles')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -485,8 +485,8 @@
                 // ========================================
                 // Holt's Double Exponential Smoothing
                 // ========================================
-                // α (alpha) = smoothing factor for level (0-1, higher = more responsive)
-                // β (beta) = smoothing factor for trend (0-1, higher = more responsive)
+                // a (alpha) = smoothing factor for level (0-1, higher = more responsive)
+                // � (beta) = smoothing factor for trend (0-1, higher = more responsive)
                 const alpha = 0.4; // Level smoothing - moderately responsive
                 const beta = 0.3;  // Trend smoothing - slightly conservative
 
@@ -521,7 +521,7 @@
                     return ((t ^ t >>> 14) >>> 0) / 4294967296;
                 };
                 const rng = mulberry32(seedFromValues(clean.length ? clean : [0]));
-                const randVariation = () => (rng() * 0.1 - 0.05); // ±5% small variation
+                const randVariation = () => (rng() * 0.1 - 0.05); // �5% small variation
 
                 const lastPeriod = (() => {
                     const reversed = [...periods].reverse();
@@ -1130,3 +1130,4 @@
         })();
     </script>
 @endpush
+

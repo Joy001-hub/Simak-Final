@@ -61,13 +61,13 @@
                         if ($logoPath) {
                             $displayUrl = url('/native-img/logos/' . $filename) . '?v=' . time();
                         } else {
-                            $displayUrl = asset('logo-profile.png');
+                            $displayUrl = '/logo-profile.png';
                         }
                     @endphp
 
                     <img id="logoPreview" src="{{ $displayUrl }}" alt="Logo Preview"
                         style="max-height: 150px; width: auto; object-fit: contain; border: 1px solid #eee; border-radius: 8px;"
-                        onerror="this.onerror=null;this.src='{{ asset('logo-profile.png') }}';">
+                        onerror="this.onerror=null;this.src='/logo-profile.png';">
                 </div>
                 <div style="display:flex; flex-direction:column; gap:4px;">
                     <span class="hint">Format: 512x512, PNG/JPG, maks 1 MB.</span>

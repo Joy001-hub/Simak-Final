@@ -253,8 +253,8 @@
             <div class="bg-white rounded-3xl card-shadow overflow-hidden">
                 {{-- Header with Logo --}}
                 <div class="px-8 pt-10 pb-6 text-center">
-                    <img class="mx-auto mb-6" src="{{ asset('/logo-app.png') }}" alt="SIMAK Logo"
-                        onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
+                    <img class="mx-auto mb-6" src="/logo-app.png" alt="SIMAK Logo"
+                        onerror="this.onerror=null;this.src='/logo-simak.svg';"
                         style="width: 160px; height: auto;">
                     <h1 class="text-2xl font-bold text-slate-900 mb-2">Login</h1>
                     <p class="text-slate-500 text-sm">Masuk untuk mengelola akun dan subscription Anda.</p>

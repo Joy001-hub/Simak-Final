@@ -51,8 +51,8 @@
             <div class="brand">
                 <div class="brand-mark logo" aria-label="SIMAK Logo"
                     style="width: 100%; max-width: 16rem; height: auto;">
-                    <img class="app-logo-img" src="{{ asset('/logo-app.png') }}" alt="SIMAK Logo"
-                        onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
+                    <img class="app-logo-img" src="/logo-app.png" alt="SIMAK Logo"
+                        onerror="this.onerror=null;this.src='/logo-simak.svg';"
                         style="width: 100%; height: auto; object-fit: contain;">
                 </div>
                 <div class="brand-text">
@@ -142,7 +142,7 @@
                         @endphp
 
                         <img class="company-logo-img" src="{{ $nativeUrl }}" alt="Logo perusahaan"
-                            onerror="this.onerror=null;this.src='{{ asset('logo-profile.png') }}';">
+                            onerror="this.onerror=null;this.src='/logo-profile.png';">
                     </div>
                     <div style="display:flex; flex-direction:column; gap:2px; overflow:hidden;">
                         <div class="brand-sub"

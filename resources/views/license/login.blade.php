@@ -17,8 +17,8 @@
         <div class="bg-white/95 backdrop-blur rounded-2xl shadow-2xl border border-white/30 overflow-hidden">
             {{-- Header --}}
             <div class="px-8 pt-8 pb-6 text-center border-b border-slate-200">
-                <img class="app-logo-img mx-auto mb-4" src="{{ asset('/logo-app.png') }}" alt="SIMAK Logo"
-                    onerror="this.onerror=null;this.src='{{ asset('/logo-simak.svg') }}';"
+                <img class="app-logo-img mx-auto mb-4" src="/logo-app.png" alt="SIMAK Logo"
+                    onerror="this.onerror=null;this.src='/logo-simak.svg';"
                     style="width:120px; height:auto;">
                 <h1 class="text-2xl font-bold text-slate-900">Login</h1>
                 <p class="text-sm text-slate-600 mt-2">Masukkan User ID &amp; Product ID Anda untuk melanjutkan.</p>

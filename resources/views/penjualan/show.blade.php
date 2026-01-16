@@ -342,7 +342,7 @@
      src="{{ $receiptLogoUrl }}"
      alt="Logo Perusahaan"
      style="max-width:100%; max-height:100%; object-fit:contain; display:block;"
-     onerror="this.onerror=null;this.src='{{ asset('logo-profile.png') }}';">
+     onerror="this.onerror=null;this.src='/logo-profile.png';">
                             </div>
                             <div>
                                 <div style="font-size:20px; font-weight:800;">{{ optional($companyProfile)->name ?? config('company.name') }}</div>
@@ -768,3 +768,4 @@ Terima kasih.`;
         });
     </script>
 @endpush
+
