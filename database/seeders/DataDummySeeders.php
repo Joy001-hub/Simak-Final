@@ -33,14 +33,44 @@ class DataDummySeeders extends Seeder
 
     private function resetTables(): void
     {
-        $driver = \Illuminate\Support\Facades\DB::getDriverName();
+        // Multi-Tenancy Safety: Do NOT truncate if we are in a multi-user environment (auth check needed)
+        // If auth check fails (cli), we might truncate but it's risky. Let's stick to delete for safety.
 
+        if (auth()->check()) {
+            $tenantKey = (string) auth()->id();
+
+            // Delete payments for this tenant
+            Payment::where('tenant_key', $tenantKey)->delete();
+
+            // Delete sales for this tenant
+            Sale::where('tenant_key', $tenantKey)->delete();
+
+            // Delete lots for this tenant (and reset project counts later? actually better delete projects too)
+            Lot::where('tenant_key', $tenantKey)->delete();
+
+            // Delete projects
+            Project::where('tenant_key', $tenantKey)->delete();
+
+            // Delete buyers
+            Buyer::where('tenant_key', $tenantKey)->delete();
+
+            // Delete marketers
+            Marketer::where('tenant_key', $tenantKey)->delete();
+
+            return;
+        }
+
+        // Only run full truncate if strictly necessary (e.g. fresh install via CLI)
+        // But even via CLI, safer to delete all if we implement tenants.
+
+        $driver = \Illuminate\Support\Facades\DB::getDriverName();
         if ($driver === 'pgsql') {
-            // Force schema fix for seeders
+            // Force schema fix for seeders (CLI only)
             try {
                 \Illuminate\Support\Facades\DB::statement("ALTER TABLE sales ALTER COLUMN status TYPE VARCHAR(50)");
-                \Illuminate\Support\Facades\DB::statement("ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_status_check");
                 \Illuminate\Support\Facades\DB::statement("ALTER TABLE payments ALTER COLUMN status TYPE VARCHAR(50)");
+                // Drop constraints if they exist
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_status_check");
                 \Illuminate\Support\Facades\DB::statement("ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check");
             } catch (\Throwable $e) {
             }
@@ -267,6 +297,10 @@ class DataDummySeeders extends Seeder
 
                 foreach ($payments as $paymentRow) {
                     $paymentRow['sale_id'] = $sale->id;
+                    // Fix Multi-Tenancy: payment bulk insert bypasses Eloquent events, so add tenant_key manually
+                    if (auth()->check()) {
+                        $paymentRow['tenant_key'] = (string) auth()->id();
+                    }
                     $paymentInserts[] = $paymentRow;
                 }
 

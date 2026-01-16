@@ -300,29 +300,73 @@ class DataManagementController extends Controller
                 logger()->warning('Auto-fix schema failed: ' . $e->getMessage());
             }
 
-            // PostgreSQL: use TRUNCATE with CASCADE
-            DB::statement('TRUNCATE TABLE payments, sales, lots, projects, buyers, marketers, company_profiles RESTART IDENTITY CASCADE');
+            // MULTI-TENANCY SAFEGUARD:
+            // Do NOT truncate if there are multiple users. Use scoped delete instead.
+            if (auth()->check()) {
+                $tenantKey = (string) auth()->id();
+                // Use Eloquent or Query Builder to delete ONLY this tenant's data
+                // Note: We avoid DB::transaction here because of the DDL statements above in PGSQL
+                DB::transaction(function () use ($tenantKey) {
+                    \App\Models\Payment::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Sale::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Lot::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Project::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Buyer::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Marketer::where('tenant_key', $tenantKey)->delete();
+                    // Company profile might be shared or per-tenant? Usually per-tenant.
+                    \App\Models\CompanyProfile::where('tenant_key', $tenantKey)->delete();
+                });
+            } else {
+                // Only if unauthenticated (should not happen in web controller) or specifically authorized
+                DB::statement('TRUNCATE TABLE payments, sales, lots, projects, buyers, marketers, company_profiles RESTART IDENTITY CASCADE');
+            }
         } elseif ($driver === 'sqlite') {
-            DB::statement('PRAGMA foreign_keys = OFF');
-            Payment::query()->delete();
-            Sale::query()->delete();
-            Lot::query()->delete();
-            Project::query()->delete();
-            Buyer::query()->delete();
-            Marketer::query()->delete();
-            CompanyProfile::query()->delete();
-            DB::statement('PRAGMA foreign_keys = ON');
+            if (auth()->check()) {
+                $tenantKey = (string) auth()->id();
+                DB::transaction(function () use ($tenantKey) {
+                    \App\Models\Payment::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Sale::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Lot::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Project::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Buyer::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Marketer::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\CompanyProfile::where('tenant_key', $tenantKey)->delete();
+                });
+            } else {
+                DB::statement('PRAGMA foreign_keys = OFF');
+                \App\Models\Payment::query()->delete();
+                \App\Models\Sale::query()->delete();
+                \App\Models\Lot::query()->delete();
+                \App\Models\Project::query()->delete();
+                \App\Models\Buyer::query()->delete();
+                \App\Models\Marketer::query()->delete();
+                \App\Models\CompanyProfile::query()->delete();
+                DB::statement('PRAGMA foreign_keys = ON');
+            }
         } else {
             // MySQL and others
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
-            Payment::truncate();
-            Sale::truncate();
-            Lot::truncate();
-            Project::truncate();
-            Buyer::truncate();
-            Marketer::truncate();
-            CompanyProfile::truncate();
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            if (auth()->check()) {
+                $tenantKey = (string) auth()->id();
+                DB::transaction(function () use ($tenantKey) {
+                    \App\Models\Payment::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Sale::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Lot::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Project::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Buyer::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\Marketer::where('tenant_key', $tenantKey)->delete();
+                    \App\Models\CompanyProfile::where('tenant_key', $tenantKey)->delete();
+                });
+            } else {
+                DB::statement('SET FOREIGN_KEY_CHECKS=0');
+                \App\Models\Payment::truncate();
+                \App\Models\Sale::truncate();
+                \App\Models\Lot::truncate();
+                \App\Models\Project::truncate();
+                \App\Models\Buyer::truncate();
+                \App\Models\Marketer::truncate();
+                \App\Models\CompanyProfile::truncate();
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            }
         }
     }
 
