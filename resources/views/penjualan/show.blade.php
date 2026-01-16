@@ -365,6 +365,10 @@
                         <div>: <em id="receiptTerbilang" style="background:#f3f4f6; padding:2px 4px; border-radius:4px;">-</em></div>
                         <div>Untuk Pembayaran</div>
                         <div>: <span id="receiptNote">Pembayaran</span></div>
+                        <div>Blok</div>
+                        <div>: <span id="receiptBlock">{{ optional($sale->lot)->block_number ?? '-' }}</span></div>
+                        <div>Kavling</div>
+                        <div>: <span id="receiptKavling">{{ optional($sale->lot)->project?->name ?? '-' }}</span></div>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin:28px 0 18px;">
                         <div id="receiptAmountBox" style="border:2px solid #111827; padding:14px 18px; font-weight:800; font-size:20px;">Rp 0</div>
@@ -426,10 +430,12 @@
         const cancelBtn = document.getElementById('cancelSaleBtn');
         const cancelModal = document.getElementById('cancelModal');
         const closeCancel = document.getElementById('closeCancelModal');
+        const cancelForm = document.getElementById('cancelForm');
         const typeRadios = document.getElementsByName('type');
         const refundInput = document.getElementById('refundInput');
         const operKreditInput = document.getElementById('operKreditInput');
         const newBuyerSelect = document.getElementById('newBuyerSelect');
+        const deleteWarning = document.getElementById('deleteWarning');
 
         // Dedicated KPR Reject Modal Elements
         const kprRejectModal = document.getElementById('kprRejectModal');
@@ -457,6 +463,7 @@
                     // Hide all extra fields first
                     if(refundInput) refundInput.classList.add('hidden');
                     if(operKreditInput) operKreditInput.classList.add('hidden');
+                    if(deleteWarning) deleteWarning.classList.add('hidden');
                     if(newBuyerSelect) newBuyerSelect.removeAttribute('required');
                     
                     // Show relevant field based on selection
@@ -465,8 +472,23 @@
                     } else if(e.target.value === 'oper_kredit') {
                         if(operKreditInput) operKreditInput.classList.remove('hidden');
                         if(newBuyerSelect) newBuyerSelect.setAttribute('required', 'required');
+                    } else if(e.target.value === 'hapus') {
+                        if(deleteWarning) deleteWarning.classList.remove('hidden');
                     }
                 });
+            });
+        }
+
+        if (cancelForm) {
+            cancelForm.addEventListener('submit', (e) => {
+                const selected = document.querySelector('input[name="type"]:checked');
+                if (selected?.value !== 'hapus') return;
+                const phrase = 'hapus penjualan';
+                const input = prompt(`Ketik "${phrase}" untuk menghapus penjualan secara permanen.`);
+                if ((input || '').trim().toLowerCase() !== phrase) {
+                    e.preventDefault();
+                    alert('Konfirmasi tidak sesuai. Penghapusan dibatalkan.');
+                }
             });
         }
 
@@ -636,8 +658,39 @@
         }
 
         function terbilang(angka) {
-            const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
-            return formatter.format(angka).replace('Rp', '').trim() + ' rupiah';
+            const normalized = String(angka ?? '').replace(/\D/g, '');
+            const n = normalized ? parseInt(normalized, 10) : 0;
+            const satuan = [
+                '',
+                'Satu',
+                'Dua',
+                'Tiga',
+                'Empat',
+                'Lima',
+                'Enam',
+                'Tujuh',
+                'Delapan',
+                'Sembilan',
+                'Sepuluh',
+                'Sebelas'
+            ];
+
+            function toWords(value) {
+                if (value < 12) return satuan[value];
+                if (value < 20) return `${toWords(value - 10)} Belas`;
+                if (value < 100) return `${satuan[Math.floor(value / 10)]} Puluh ${toWords(value % 10)}`;
+                if (value < 200) return `Seratus ${toWords(value - 100)}`;
+                if (value < 1000) return `${satuan[Math.floor(value / 100)]} Ratus ${toWords(value % 100)}`;
+                if (value < 2000) return `Seribu ${toWords(value - 1000)}`;
+                if (value < 1000000) return `${toWords(Math.floor(value / 1000))} Ribu ${toWords(value % 1000)}`;
+                if (value < 1000000000) return `${toWords(Math.floor(value / 1000000))} Juta ${toWords(value % 1000000)}`;
+                if (value < 1000000000000) return `${toWords(Math.floor(value / 1000000000))} Miliar ${toWords(value % 1000000000)}`;
+                if (value < 1000000000000000) return `${toWords(Math.floor(value / 1000000000000))} Triliun ${toWords(value % 1000000000000)}`;
+                return '';
+            }
+
+            if (n === 0) return 'Nol Rupiah';
+            return `${toWords(n)} Rupiah`.replace(/\s\s+/g, ' ').trim();
         }
 
         function bindPrintButtons() {

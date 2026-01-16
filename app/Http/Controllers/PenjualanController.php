@@ -49,9 +49,8 @@ class PenjualanController extends Controller
             $sale->status_before_cancel = $sale->status_before_cancel ?? $sale->status;
 
             if ($type === 'hapus') {
-                $sale->status = Sale::STATUS_CANCELED_HAPUS;
-                $sale->save();
-                $sale->lot?->update(['status' => 'available']);
+                $this->deleteSalePermanently($sale);
+                return redirect()->route('penjualan.index')->with('success', 'Penjualan dihapus permanen.');
             } elseif ($type === 'refund') {
                 $amount = (int) str_replace('.', '', $request->input('refund_amount', 0));
                 $realPaid = $sale->payments()->where('status', 'paid')->sum('amount');
@@ -571,9 +570,22 @@ class PenjualanController extends Controller
     public function destroy(Sale $penjualan)
     {
         return $this->safeExecute(function () use ($penjualan) {
-            $penjualan->delete();
-            return redirect()->route('penjualan.index')->with('success', 'Penjualan dihapus');
+            $this->deleteSalePermanently($penjualan);
+            return redirect()->route('penjualan.index')->with('success', 'Penjualan dihapus permanen.');
         }, 'penjualan.index');
+    }
+
+    private function deleteSalePermanently(Sale $sale): void
+    {
+        DB::transaction(function () use ($sale) {
+            $lot = $sale->lot;
+            $sale->payments()->delete();
+            $sale->delete();
+
+            if ($lot) {
+                $lot->update(['status' => 'available']);
+            }
+        });
     }
 
     public function edit(Sale $penjualan)

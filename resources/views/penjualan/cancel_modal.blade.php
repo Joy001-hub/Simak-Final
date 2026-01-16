@@ -67,6 +67,31 @@
                         </div>
                     </div>
                 </label>
+                <label class="cancel-option delete">
+                    <input type="radio" name="type" value="hapus">
+                    <div class="cancel-option-content">
+                        <div class="cancel-option-icon" style="background: #fee2e2;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b91c1c"
+                                stroke-width="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                <path d="M10 11v6" />
+                                <path d="M14 11v6" />
+                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                            </svg>
+                        </div>
+                        <div class="cancel-option-text">
+                            <strong>Hapus Penjualan</strong>
+                            <span>Hapus permanen seluruh transaksi</span>
+                        </div>
+                        <div class="cancel-option-check">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3">
+                                <polyline points="20,6 9,17 4,12" />
+                            </svg>
+                        </div>
+                    </div>
+                </label>
             </div>
 
             <div id="refundInput" class="cancel-extra-field hidden">
@@ -93,6 +118,25 @@
                             <option value="{{ $marketer->id }}">{{ $marketer->name }}</option>
                         @endforeach
                     </select>
+                </div>
+            </div>
+
+            <div id="deleteWarning" class="cancel-extra-field hidden">
+                <div style="display:flex; gap:12px; align-items:flex-start;">
+                    <div style="width:36px; height:36px; border-radius:10px; background:#fee2e2; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <circle cx="12" cy="16" r="1" />
+                        </svg>
+                    </div>
+                    <div>
+                        <strong style="display:block; font-size:13px; color:#b91c1c;">Konfirmasi Penghapusan</strong>
+                        <p style="margin:4px 0 0; font-size:12px; color:#7f1d1d;">
+                            Data transaksi dan pembayaran akan dihapus permanen. Anda akan diminta mengetik
+                            "hapus penjualan" sebelum proses dijalankan.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -140,6 +184,11 @@
         background: #fef2f2;
     }
 
+    .cancel-option.delete input:checked+.cancel-option-content {
+        border-color: #dc2626;
+        background: #fff1f2;
+    }
+
     .cancel-option-icon {
         width: 40px;
         height: 40px;
@@ -168,6 +217,10 @@
         color: #6b7280;
     }
 
+    .cancel-option.delete .cancel-option-text strong {
+        color: #b91c1c;
+    }
+
     .cancel-option-check {
         width: 24px;
         height: 24px;
@@ -185,6 +238,11 @@
         background: #b4232a;
         border-color: #b4232a;
         color: #fff;
+    }
+
+    .cancel-option.delete input:checked+.cancel-option-content .cancel-option-check {
+        background: #dc2626;
+        border-color: #dc2626;
     }
 
     .cancel-extra-field {
