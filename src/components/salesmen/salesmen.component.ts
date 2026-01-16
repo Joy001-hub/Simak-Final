@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../../services/data.service';
 import { Salesman } from '../../models/data.models';
@@ -17,6 +17,21 @@ import { Salesman } from '../../models/data.models';
         </button>
       </div>
 
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
+        <div>
+          Menampilkan {{ pagedSalesmen().length }} dari {{ totalSalesmen() }} data
+        </div>
+        <div class="flex items-center gap-2">
+          <label for="salesmanPageSize" class="text-sm font-medium">Per halaman</label>
+          <select id="salesmanPageSize" [value]="pageSize()" (change)="changePageSize($event)"
+            class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-2 py-1">
+            <option [value]="10">10</option>
+            <option [value]="20">20</option>
+            <option [value]="50">50</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Desktop Table View -->
       <div class="hidden md:block bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -29,7 +44,7 @@ import { Salesman } from '../../models/data.models';
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            @for (salesman of salesmen(); track salesman.id) {
+            @for (salesman of pagedSalesmen(); track salesman.id) {
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td class="px-6 py-4 text-base font-medium text-gray-900 dark:text-gray-100">{{ salesman.id }}</td>
                 <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">{{ salesman.name }}</td>
@@ -48,9 +63,27 @@ import { Salesman } from '../../models/data.models';
         </table>
       </div>
 
+      @if (totalSalesmen() > pageSize()) {
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div class="text-gray-600 dark:text-gray-300">
+            Halaman {{ pageIndex() }} dari {{ totalSalesmanPages() }}
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="prevPage()" [disabled]="pageIndex() === 1"
+              class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+              Sebelumnya
+            </button>
+            <button (click)="nextPage()" [disabled]="pageIndex() === totalSalesmanPages()"
+              class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      }
+
       <!-- Mobile Card View -->
       <div class="md:hidden space-y-4">
-        @for (salesman of salesmen(); track salesman.id) {
+        @for (salesman of pagedSalesmen(); track salesman.id) {
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div class="flex justify-between items-start">
               <div>
@@ -146,6 +179,15 @@ import { Salesman } from '../../models/data.models';
 export class SalesmenComponent {
   dataService = inject(DataService);
   salesmen = this.dataService.salesmen;
+  pageIndex = signal(1);
+  pageSize = signal(20);
+  totalSalesmen = computed(() => this.salesmen().length);
+  totalSalesmanPages = computed(() => Math.max(1, Math.ceil(this.totalSalesmen() / this.pageSize())));
+  pagedSalesmen = computed(() => {
+    const start = (this.pageIndex() - 1) * this.pageSize();
+    return this.salesmen().slice(start, start + this.pageSize());
+  });
+
   showModal = signal(false);
   currentSalesman = signal<Partial<Salesman> | null>(null);
 
@@ -179,6 +221,7 @@ export class SalesmenComponent {
       this.dataService.updateSalesman(salesman as Salesman);
     } else {
       this.dataService.addSalesman({ name: salesman.name, phone: salesman.phone });
+      this.pageIndex.set(this.totalSalesmanPages());
     }
     this.closeModal();
   }
@@ -195,11 +238,34 @@ export class SalesmenComponent {
     this.deleteError.set(null);
   }
 
+  changePageSize(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const nextSize = parseInt(target.value, 10);
+    this.pageSize.set(Number.isFinite(nextSize) ? nextSize : 20);
+    this.pageIndex.set(1);
+  }
+
+  goToPage(page: number) {
+    const nextPage = Math.min(Math.max(page, 1), this.totalSalesmanPages());
+    this.pageIndex.set(nextPage);
+  }
+
+  prevPage() {
+    this.goToPage(this.pageIndex() - 1);
+  }
+
+  nextPage() {
+    this.goToPage(this.pageIndex() + 1);
+  }
+
   confirmDelete() {
     const salesman = this.salesmanToDelete();
     if (salesman) {
       const result = this.dataService.deleteSalesman(salesman.id);
       if (result.success) {
+        if (this.pageIndex() > this.totalSalesmanPages()) {
+          this.pageIndex.set(this.totalSalesmanPages());
+        }
         this.closeDeleteModal();
       } else {
         this.deleteError.set(result.message || 'An unknown error occurred.');

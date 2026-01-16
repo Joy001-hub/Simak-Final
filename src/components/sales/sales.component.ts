@@ -32,6 +32,10 @@ export class SalesComponent {
   sortColumn = signal<string>('bookingDate');
   sortDirection = signal<'asc' | 'desc'>('desc');
 
+  // --- Pagination State ---
+  pageIndex = signal(1);
+  pageSize = signal(25);
+
   // --- Computed Signal for Filtered and Sorted Sales ---
   filteredSales = computed(() => {
     const allSales = this.dataService.soldLotsSummary();
@@ -93,6 +97,13 @@ export class SalesComponent {
         
         return direction === 'asc' ? comparison : -comparison;
     });
+  });
+
+  totalSales = computed(() => this.filteredSales().length);
+  totalSalesPages = computed(() => Math.max(1, Math.ceil(this.totalSales() / this.pageSize())));
+  pagedSales = computed(() => {
+    const start = (this.pageIndex() - 1) * this.pageSize();
+    return this.filteredSales().slice(start, start + this.pageSize());
   });
 
   // New Sale Form State
@@ -251,11 +262,34 @@ export class SalesComponent {
     this.filterSaleStatus.set('');
     this.filterSalesmanId.set('');
     this.filterBillingStatus.set('');
+    this.pageIndex.set(1);
   }
 
   onFilterChange(signal: WritableSignal<string>, event: Event) {
     const input = event.target as HTMLInputElement | HTMLSelectElement;
     signal.set(input.value);
+    this.pageIndex.set(1);
+  }
+
+  // --- Pagination Methods ---
+  changePageSize(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const nextSize = parseInt(target.value, 10);
+    this.pageSize.set(Number.isFinite(nextSize) ? nextSize : 25);
+    this.pageIndex.set(1);
+  }
+
+  goToPage(page: number) {
+    const nextPage = Math.min(Math.max(page, 1), this.totalSalesPages());
+    this.pageIndex.set(nextPage);
+  }
+
+  prevPage() {
+    this.goToPage(this.pageIndex() - 1);
+  }
+
+  nextPage() {
+    this.goToPage(this.pageIndex() + 1);
   }
 
   // --- Sorting Method ---
@@ -266,6 +300,7 @@ export class SalesComponent {
         this.sortColumn.set(column);
         this.sortDirection.set('asc');
     }
+    this.pageIndex.set(1);
   }
 
   // --- Styling Methods ---

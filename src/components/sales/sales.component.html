@@ -89,6 +89,22 @@
             </div>
         </div>
 
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
+            <div>
+                Menampilkan {{ pagedSales().length }} dari {{ totalSales() }} data
+            </div>
+            <div class="flex items-center gap-2">
+                <label for="pageSize" class="text-sm font-medium">Per halaman</label>
+                <select id="pageSize" [value]="pageSize()" (change)="changePageSize($event)"
+                    class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-2 py-1">
+                    <option [value]="10">10</option>
+                    <option [value]="25">25</option>
+                    <option [value]="50">50</option>
+                    <option [value]="100">100</option>
+                </select>
+            </div>
+        </div>
+
         <!-- Desktop Table View -->
         <div class="hidden md:block bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
             <div class="overflow-x-auto">
@@ -155,7 +171,7 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        @for (sale of filteredSales(); track sale.id) {
+                        @for (sale of pagedSales(); track sale.id) {
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                 <td class="px-4 py-4">
                                     @switch(sale.billingStatus) {
@@ -214,24 +230,42 @@
                                 </td>
                             </tr>
                         } @empty {
-                           <tr>
-                             <td colspan="12" class="text-center py-10 text-gray-500 dark:text-gray-400">
-                                @if (dataService.soldLotsSummary().length > 0) {
-                                  <span>Tidak ada data penjualan yang cocok dengan kriteria filter Anda.</span>
-                                } @else {
-                                  <span>Tidak ada data penjualan kavling.</span>
-                                }
-                             </td>
-                           </tr>
+                            <tr>
+                              <td colspan="12" class="text-center py-10 text-gray-500 dark:text-gray-400">
+                                 @if (dataService.soldLotsSummary().length > 0) {
+                                   <span>Tidak ada data penjualan yang cocok dengan kriteria filter Anda.</span>
+                                 } @else {
+                                   <span>Tidak ada data penjualan kavling.</span>
+                                 }
+                              </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
             </div>
         </div>
+
+        @if (totalSales() > pageSize()) {
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                <div class="text-gray-600 dark:text-gray-300">
+                    Halaman {{ pageIndex() }} dari {{ totalSalesPages() }}
+                </div>
+                <div class="flex items-center gap-2">
+                    <button (click)="prevPage()" [disabled]="pageIndex() === 1"
+                        class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+                        Sebelumnya
+                    </button>
+                    <button (click)="nextPage()" [disabled]="pageIndex() === totalSalesPages()"
+                        class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+                        Berikutnya
+                    </button>
+                </div>
+            </div>
+        }
         
         <!-- Mobile Card View -->
         <div class="md:hidden space-y-4">
-            @for (sale of filteredSales(); track sale.id) {
+            @for (sale of pagedSales(); track sale.id) {
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                     <div class="flex justify-between items-start">
                         <div class="flex items-center gap-3">
@@ -302,6 +336,24 @@
                 </div>
             }
         </div>
+
+        @if (totalSales() > pageSize()) {
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm md:hidden">
+                <div class="text-gray-600 dark:text-gray-300">
+                    Halaman {{ pageIndex() }} dari {{ totalSalesPages() }}
+                </div>
+                <div class="flex items-center gap-2">
+                    <button (click)="prevPage()" [disabled]="pageIndex() === 1"
+                        class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+                        Sebelumnya
+                    </button>
+                    <button (click)="nextPage()" [disabled]="pageIndex() === totalSalesPages()"
+                        class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+                        Berikutnya
+                    </button>
+                </div>
+            </div>
+        }
     }
 </div>
 

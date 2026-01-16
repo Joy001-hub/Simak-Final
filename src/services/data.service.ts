@@ -277,6 +277,9 @@ export class DataService {
   payments = signal<Payment[]>([]);
   initialSetupDone = signal(false);
 
+  private saveTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private readonly saveDelayMs = 800;
+
   // Navigation signals
   requestedView = signal<string | null>(null);
   requestedSaleDetailId = signal<number | null>(null);
@@ -310,13 +313,25 @@ export class DataService {
     effect(() => {
       // Don't save data if the initial setup isn't complete (i.e., data is empty)
       if (this.initialSetupDone()) {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.appData()));
-        } catch (e) {
-          console.error('Error saving data to localStorage', e);
-        }
+        // Track appData changes to trigger autosave.
+        this.appData();
+        this.scheduleSave();
       }
     });
+  }
+
+  private scheduleSave() {
+    if (this.saveTimeoutId) {
+      clearTimeout(this.saveTimeoutId);
+    }
+
+    this.saveTimeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.appData()));
+      } catch (e) {
+        console.error('Error saving data to localStorage', e);
+      }
+    }, this.saveDelayMs);
   }
 
   private _loadData() {
@@ -342,10 +357,8 @@ export class DataService {
         this.initialSetupDone.set(false);
     }
 
-    // Jika belum ada data tersimpan (instalasi pertama/clean slate), otomatis muat demo
-    if (!this.initialSetupDone()) {
-      this.loadDemoData();
-    }
+    // Jika belum ada data tersimpan (instalasi pertama/clean slate), biarkan kosong
+    // dan tampilkan pilihan setup di UI.
   }
 
   loadDemoData() {
@@ -1453,11 +1466,7 @@ export class DataService {
     this.payments.set([]);
     // Tandai setup selesai supaya effect menyimpan keadaan kosong
     this.initialSetupDone.set(true);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.appData()));
-    } catch (e) {
-      console.error('Error menyimpan data kosong ke localStorage', e);
-    }
+    this.scheduleSave();
   }
 
   historicalSalesMonthsCount = computed(() => {

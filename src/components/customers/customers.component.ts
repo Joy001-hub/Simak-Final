@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../../services/data.service';
 import { Customer } from '../../models/data.models';
@@ -17,8 +17,23 @@ import { Customer } from '../../models/data.models';
         </button>
       </div>
 
-      <!-- Desktop Table View -->
-      <div class="hidden md:block bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
+       <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
+         <div>
+           Menampilkan {{ pagedCustomers().length }} dari {{ totalCustomers() }} data
+         </div>
+         <div class="flex items-center gap-2">
+           <label for="customerPageSize" class="text-sm font-medium">Per halaman</label>
+           <select id="customerPageSize" [value]="pageSize()" (change)="changePageSize($event)"
+             class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-2 py-1">
+             <option [value]="10">10</option>
+             <option [value]="20">20</option>
+             <option [value]="50">50</option>
+           </select>
+         </div>
+       </div>
+
+       <!-- Desktop Table View -->
+       <div class="hidden md:block bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead class="bg-gray-50 dark:bg-gray-700/50">
             <tr>
@@ -30,7 +45,7 @@ import { Customer } from '../../models/data.models';
             </tr>
           </thead>
           <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            @for (customer of customers(); track customer.id) {
+            @for (customer of pagedCustomers(); track customer.id) {
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td class="px-6 py-4 text-base font-medium text-gray-900 dark:text-gray-100">{{ customer.id }}</td>
                 <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">{{ customer.name }}</td>
@@ -50,9 +65,27 @@ import { Customer } from '../../models/data.models';
         </table>
       </div>
 
+      @if (totalCustomers() > pageSize()) {
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div class="text-gray-600 dark:text-gray-300">
+            Halaman {{ pageIndex() }} dari {{ totalCustomerPages() }}
+          </div>
+          <div class="flex items-center gap-2">
+            <button (click)="prevPage()" [disabled]="pageIndex() === 1"
+              class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+              Sebelumnya
+            </button>
+            <button (click)="nextPage()" [disabled]="pageIndex() === totalCustomerPages()"
+              class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      }
+
       <!-- Mobile Card View -->
       <div class="md:hidden space-y-4">
-        @for (customer of customers(); track customer.id) {
+        @for (customer of pagedCustomers(); track customer.id) {
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div class="flex justify-between items-start">
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ customer.name }}</p>
@@ -153,6 +186,15 @@ import { Customer } from '../../models/data.models';
 export class CustomersComponent {
   dataService = inject(DataService);
   customers = this.dataService.customers;
+  pageIndex = signal(1);
+  pageSize = signal(20);
+  totalCustomers = computed(() => this.customers().length);
+  totalCustomerPages = computed(() => Math.max(1, Math.ceil(this.totalCustomers() / this.pageSize())));
+  pagedCustomers = computed(() => {
+    const start = (this.pageIndex() - 1) * this.pageSize();
+    return this.customers().slice(start, start + this.pageSize());
+  });
+
   showModal = signal(false);
   currentCustomer = signal<Partial<Customer> | null>(null);
   
@@ -186,6 +228,7 @@ export class CustomersComponent {
       this.dataService.updateCustomer(customer as Customer);
     } else {
       this.dataService.addCustomer({ name: customer.name, phone: customer.phone, address: customer.address || '' });
+      this.pageIndex.set(this.totalCustomerPages());
     }
     this.closeModal();
   }
@@ -202,11 +245,34 @@ export class CustomersComponent {
     this.deleteError.set(null);
   }
 
+  changePageSize(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const nextSize = parseInt(target.value, 10);
+    this.pageSize.set(Number.isFinite(nextSize) ? nextSize : 20);
+    this.pageIndex.set(1);
+  }
+
+  goToPage(page: number) {
+    const nextPage = Math.min(Math.max(page, 1), this.totalCustomerPages());
+    this.pageIndex.set(nextPage);
+  }
+
+  prevPage() {
+    this.goToPage(this.pageIndex() - 1);
+  }
+
+  nextPage() {
+    this.goToPage(this.pageIndex() + 1);
+  }
+
   confirmDelete() {
     const customer = this.customerToDelete();
     if (customer) {
       const result = this.dataService.deleteCustomer(customer.id);
       if (result.success) {
+        if (this.pageIndex() > this.totalCustomerPages()) {
+          this.pageIndex.set(this.totalCustomerPages());
+        }
         this.closeDeleteModal();
       } else {
         this.deleteError.set(result.message || 'An unknown error occurred.');

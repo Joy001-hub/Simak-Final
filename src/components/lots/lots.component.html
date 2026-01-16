@@ -38,6 +38,21 @@
     </div>
 
 
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
+      <div>
+        Menampilkan {{ pagedLots().length }} dari {{ totalLots() }} data
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="lotPageSize" class="text-sm font-medium">Per halaman</label>
+        <select id="lotPageSize" [value]="pageSize()" (change)="changePageSize($event)"
+          class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 px-2 py-1">
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Desktop Table View -->
     <div class="hidden md:block bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -80,9 +95,9 @@
           </tr>
         </thead>
         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          @for (lot of filteredAndSortedLots(); track lot.id; let i = $index) {
+          @for (lot of pagedLots(); track lot.id; let i = $index) {
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-              <td class="px-6 py-4 text-base font-medium text-gray-900 dark:text-gray-100">{{ i + 1 }}</td>
+              <td class="px-6 py-4 text-base font-medium text-gray-900 dark:text-gray-100">{{ i + 1 + ((pageIndex() - 1) * pageSize()) }}</td>
               <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">{{ lot.projectName }}</td>
               <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">{{ lot.block }}/{{ lot.lot_number }}</td>
               <td class="px-6 py-4 text-base text-gray-600 dark:text-gray-300">{{ lot.area }}</td>
@@ -108,9 +123,27 @@
       </table>
     </div>
 
+    @if (totalLots() > pageSize()) {
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="text-gray-600 dark:text-gray-300">
+          Halaman {{ pageIndex() }} dari {{ totalLotPages() }}
+        </div>
+        <div class="flex items-center gap-2">
+          <button (click)="prevPage()" [disabled]="pageIndex() === 1"
+            class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+            Sebelumnya
+          </button>
+          <button (click)="nextPage()" [disabled]="pageIndex() === totalLotPages()"
+            class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+            Berikutnya
+          </button>
+        </div>
+      </div>
+    }
+
     <!-- Mobile Card View -->
     <div class="md:hidden space-y-4">
-      @for (lot of filteredAndSortedLots(); track lot.id) {
+      @for (lot of pagedLots(); track lot.id) {
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div class="flex justify-between items-start">
             <div>
@@ -142,6 +175,24 @@
         </div>
       }
     </div>
+
+    @if (totalLots() > pageSize()) {
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm md:hidden">
+        <div class="text-gray-600 dark:text-gray-300">
+          Halaman {{ pageIndex() }} dari {{ totalLotPages() }}
+        </div>
+        <div class="flex items-center gap-2">
+          <button (click)="prevPage()" [disabled]="pageIndex() === 1"
+            class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+            Sebelumnya
+          </button>
+          <button (click)="nextPage()" [disabled]="pageIndex() === totalLotPages()"
+            class="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1 text-gray-700 dark:text-gray-200 disabled:opacity-50">
+            Berikutnya
+          </button>
+        </div>
+      </div>
+    }
   </div>
 
   <!-- Add/Edit Modal -->

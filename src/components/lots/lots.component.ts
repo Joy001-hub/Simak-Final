@@ -29,6 +29,10 @@ export class LotsComponent {
   sortColumn = signal<string>('id');
   sortDirection = signal<'asc' | 'desc'>('asc');
 
+  // --- Pagination State ---
+  pageIndex = signal(1);
+  pageSize = signal(25);
+
   // --- Computed Signal for Filtered and Sorted Lots ---
   filteredAndSortedLots = computed(() => {
     let lots = this.dataService.lotsWithProject();
@@ -73,15 +77,45 @@ export class LotsComponent {
     });
   });
 
+  totalLots = computed(() => this.filteredAndSortedLots().length);
+  totalLotPages = computed(() => Math.max(1, Math.ceil(this.totalLots() / this.pageSize())));
+  pagedLots = computed(() => {
+    const start = (this.pageIndex() - 1) * this.pageSize();
+    return this.filteredAndSortedLots().slice(start, start + this.pageSize());
+  });
+
   // --- Filter Methods ---
   onFilterChange(signal: WritableSignal<string>, event: Event) {
     const input = event.target as HTMLSelectElement;
     signal.set(input.value);
+    this.pageIndex.set(1);
   }
 
   resetFilters() {
     this.filterProjectId.set('');
     this.filterStatus.set('');
+    this.pageIndex.set(1);
+  }
+
+  // --- Pagination Methods ---
+  changePageSize(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const nextSize = parseInt(target.value, 10);
+    this.pageSize.set(Number.isFinite(nextSize) ? nextSize : 25);
+    this.pageIndex.set(1);
+  }
+
+  goToPage(page: number) {
+    const nextPage = Math.min(Math.max(page, 1), this.totalLotPages());
+    this.pageIndex.set(nextPage);
+  }
+
+  prevPage() {
+    this.goToPage(this.pageIndex() - 1);
+  }
+
+  nextPage() {
+    this.goToPage(this.pageIndex() + 1);
   }
 
   // --- Sorting Method ---
@@ -92,6 +126,7 @@ export class LotsComponent {
       this.sortColumn.set(column);
       this.sortDirection.set('asc');
     }
+    this.pageIndex.set(1);
   }
 
   openModal(lot: Lot | null = null) {
@@ -112,7 +147,10 @@ export class LotsComponent {
 
   saveLot() {
     const lot = this.currentLot();
-    if (!lot || !lot.project_id || !lot.block || !lot.lot_number || lot.area <= 0 || lot.base_price <= 0) {
+    const area = Number(lot?.area ?? 0);
+    const basePrice = Number(lot?.base_price ?? 0);
+
+    if (!lot || !lot.project_id || !lot.block || !lot.lot_number || area <= 0 || basePrice <= 0) {
         alert('Please fill all fields with valid values.');
         return;
     }
@@ -121,14 +159,15 @@ export class LotsComponent {
       project_id: lot.project_id,
       block: lot.block,
       lot_number: lot.lot_number,
-      area: lot.area,
-      base_price: lot.base_price,
+      area,
+      base_price: basePrice,
     };
 
     if (lot.id) {
       this.dataService.updateLot({ ...saveData, id: lot.id, status: lot.status || 'available' });
     } else {
       this.dataService.addLot(saveData);
+      this.pageIndex.set(this.totalLotPages());
     }
     this.closeModal();
   }
@@ -150,6 +189,9 @@ export class LotsComponent {
     if (lot) {
       const result = this.dataService.deleteLot(lot.id);
       if (result.success) {
+        if (this.pageIndex() > this.totalLotPages()) {
+          this.pageIndex.set(this.totalLotPages());
+        }
         this.closeDeleteModal();
       } else {
         this.deleteError.set(result.message || 'An unknown error occurred.');
