@@ -357,6 +357,10 @@ class PenjualanController extends Controller
             $booking = $sale->booking_date ?? now();
             $invoiceNumber = $this->formatDocumentNumber($invoiceFormat, $sale, $booking);
             $receiptNumber = $this->formatDocumentNumber($receiptFormat, $sale, $booking);
+            $companyLogo = $companyProfile?->logo_path
+                ? asset('storage/' . $companyProfile->logo_path)
+                : asset(config('company.logo_url', '/logo-app.png'));
+
 
             $dpAmount = (int) ($sale->down_payment ?? 0);
             $dpPayment = $sale->payments->where('note', 'Down Payment')->first();
@@ -441,7 +445,8 @@ class PenjualanController extends Controller
             $buyers = Buyer::all();
             $marketers = Marketer::all();
 
-            return view('penjualan.show', compact('penjualan', 'sale', 'receiptNumber', 'buyers', 'marketers'));
+            return view('penjualan.show', compact('penjualan', 'sale', 'receiptNumber', 'buyers', 'marketers', 'companyProfile', 'companyLogo'));
+
         }, 'penjualan.index');
     }
 

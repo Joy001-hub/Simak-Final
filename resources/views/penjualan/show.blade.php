@@ -335,7 +335,8 @@
                         <div style="display:flex; gap:12px; align-items:flex-start;">
                             <div class="upload-preview" style="width:64px; height:64px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; padding:6px;">
                                 @php
-                                    $receiptLogoFilename = basename($companyLogo);
+                                    $companyLogoValue = $companyLogo ?? asset(config('company.logo_url', '/logo-app.png'));
+                                    $receiptLogoFilename = basename($companyLogoValue);
                                     $receiptLogoUrl = url('/native-img/logos/' . $receiptLogoFilename) . '?v=' . time();
                                 @endphp
                                 <img class="company-logo-img"
@@ -343,6 +344,7 @@
      alt="Logo Perusahaan"
      style="max-width:100%; max-height:100%; object-fit:contain; display:block;"
      onerror="this.onerror=null;this.src='/logo-profile.png';">
+
                             </div>
                             <div>
                                 <div style="font-size:20px; font-weight:800;">{{ optional($companyProfile)->name ?? config('company.name') }}</div>
