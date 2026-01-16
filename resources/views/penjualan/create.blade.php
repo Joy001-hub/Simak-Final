@@ -142,13 +142,26 @@
         </div>
         <div class="grid-2" style="column-gap:18px;">
             <div class="field">
-                <label class="hint">Uang Muka (%)</label>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <input class="input" type="number" name="dp_percent" id="dpPercentInput" min="0" max="100" step="any"
-                        value="{{ old('dp_percent') ?: '' }}" placeholder="Misal: 10, 20, dst " style="flex:1;">
-                    <span style="color:#64748B; font-size:13px; white-space:nowrap;">/ <strong id="dpRupiahDisplay">Rp
-                            0</strong></span>
+                <label class="hint">Uang Muka</label>
+                <div style="display:flex; gap:8px;">
+                    <select id="dpType" class="input"
+                        style="width:75px; padding-left:8px; padding-right:4px; background-color:#f8fafc; cursor:pointer;">
+                        <option value="percent">%</option>
+                        <option value="nominal">Rp</option>
+                    </select>
+
+                    <div style="flex:1;">
+                        <input class="input" type="number" name="dp_percent" id="dpPercentInput" min="0" max="100"
+                            step="any" value="{{ old('dp_percent') ?: '' }}" placeholder="Misal: 10, 20...">
+
+                        <input class="input currency-input" type="text" id="dpNominalDisplayInput"
+                            placeholder="Masukkan nominal DP" style="display:none;">
+                    </div>
                 </div>
+                <div style="margin-top:6px; font-size:13px; color:#64748B; display:flex; justify-content:flex-end;">
+                    <span id="dpConversiDisplay">Setara: <strong id="dpRupiahDisplay">Rp 0</strong></span>
+                </div>
+                <!-- Hidden input for the actual nominal value sent to backend -->
                 <input type="hidden" name="down_payment" id="dpInput" value="{{ old('down_payment') ?: '' }}">
             </div>
         </div>
@@ -171,248 +184,278 @@
 
     @push('scripts')
         <script>
-            const basePrice = document.getElementById('basePrice');
-            const discount = document.getElementById('discount');
-            const netPrice = document.getElementById('netPrice');
-            const extraPpjb = document.getElementById('extraPpjb');
-            const extraShm = document.getElementById('extraShm');
-            const extraOther = document.getElementById('extraOther');
-            const grandTotal = document.getElementById('grandTotal');
-            const dpPercentInput = document.getElementById('dpPercentInput');
-            const priceInput = netPrice; // for compatibility
-            const dpInput = document.getElementById('dpInput');
-            const tenorInput = document.getElementById('tenorInput');
-            const paymentMethod = document.getElementById('paymentMethod');
-            const dpRupiahDisplay = document.getElementById('dpRupiahDisplay');
-            const installmentEstimate = document.getElementById('installmentEstimate');
-            const dueDayInput = document.getElementById('dueDayInput');
-            const lotSelect = document.getElementById('lotSelect');
-            const bookingFeeInput = document.getElementById('bookingFeeInput');
-            const bookingFeeIncluded = document.getElementById('bookingFeeIncluded');
-            window.lastDpChange = null;
+        const basePrice = document.getElementById('basePrice');
+        const discount = document.getElementById('discount');
+        const netPrice = document.getElementById('netPrice');
+        const extraPpjb = document.getElementById('extraPpjb');
+        const extraShm = document.getElementById('extraShm');
+        const extraOther = document.getElementById('extraOther');
+        const grandTotal = document.getElementById('grandTotal');
+        
+        // DP Elements
+        const dpType = document.getElementById('dpType');
+        const dpPercentInput = document.getElementById('dpPercentInput');
+        const dpNominalDisplayInput = document.getElementById('dpNominalDisplayInput');
+        const dpConversiDisplay = document.getElementById('dpConversiDisplay');
+        const dpInput = document.getElementById('dpInput'); // Hidden Input
+        
+        const tenorInput = document.getElementById('tenorInput');
+        const paymentMethod = document.getElementById('paymentMethod');
+        const installmentEstimate = document.getElementById('installmentEstimate');
+        const dueDayInput = document.getElementById('dueDayInput');
+        const lotSelect = document.getElementById('lotSelect');
+        const bookingFeeInput = document.getElementById('bookingFeeInput');
+        const bookingFeeIncluded = document.getElementById('bookingFeeIncluded');
+        window.lastDpChange = null;
 
-            function formatIDR(n) {
-                return 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+        function formatIDR(n) {
+            return 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+        }
+
+        function parseIDR(str) {
+            if (typeof str !== 'string') str = String(str || '');
+            return Number(str.replace(/\./g, '')) || 0;
+        }
+
+        function formatNumber(n) {
+            return (Number(n) || 0).toLocaleString('id-ID');
+        }
+        
+        function getNetPrice() {
+            const base = parseIDR(basePrice.value);
+            const disc = parseIDR(discount.value);
+            return Math.max(0, base - disc);
+        }
+
+        const isEmptyOrZero = (val) => val === '' || val === null || parseIDR(val) === 0;
+
+        function hydrateFromLot() {
+            const selected = lotSelect?.selectedOptions?.[0];
+            if (!selected) return;
+            const base = Number(selected.getAttribute('data-base-price') || 0);
+            if (base > 0) {
+                basePrice.value = formatNumber(base);
             }
-
-            function parseIDR(str) {
-                if (typeof str !== 'string') str = String(str || '');
-                return Number(str.replace(/\./g, '')) || 0;
-            }
-
-            function formatNumber(n) {
-                return (Number(n) || 0).toLocaleString('id-ID');
-            }
-
-            const isEmptyOrZero = (val) => val === '' || val === null || parseIDR(val) === 0;
-
-            function hydrateFromLot() {
-                const selected = lotSelect?.selectedOptions?.[0];
-                if (!selected) return;
-                const base = Number(selected.getAttribute('data-base-price') || 0);
-                if (base > 0) {
-                    basePrice.value = formatNumber(base);
-                }
-                recalc();
-            }
-
-            async function autoFetchLotPricing(lotId, { forceDpDefaults = false, preserveExisting = false } = {}) {
-                if (!lotId) return;
-                try {
-                    const res = await fetch(`/kavling/${lotId}/pricing`, { headers: { 'Accept': 'application/json' } });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    if (Number.isFinite(Number(data?.base_price)) && (!preserveExisting || isEmptyOrZero(basePrice.value))) {
-                        basePrice.value = formatNumber(data.base_price);
-                    }
-                    // Only fill installment defaults if payment method is installment
-                    const isInstallment = paymentMethod.value === 'installment';
-                    if (isInstallment) {
-                        const defaults = data?.payment_defaults || {};
-                        if ((forceDpDefaults || isEmptyOrZero(dpPercentInput.value)) && Number.isFinite(Number(defaults.dp_percent))) {
-                            dpPercentInput.value = defaults.dp_percent;
-                        }
-                        if (forceDpDefaults || isEmptyOrZero(dpInput.value)) {
-                            // dp_nominal is usually calculated, but if provided in defaults:
-                            if (Number.isFinite(Number(defaults.dp_nominal))) {
-                                // We don't set dpInput (hidden) directly, we let recalc handle it or set it if needed
-                                // But here we rely on recalc mostly.
-                            }
-                        }
-                        if ((forceDpDefaults || isEmptyOrZero(tenorInput.value)) && Number.isFinite(Number(defaults.tenor_months))) {
-                            tenorInput.value = defaults.tenor_months;
-                        }
-                        if ((forceDpDefaults || isEmptyOrZero(dueDayInput.value)) && Number.isFinite(Number(defaults.due_day))) {
-                            dueDayInput.value = defaults.due_day;
-                        }
-                    }
-                } catch (e) {
-                    // noop fallback to local data attributes
-                }
-                recalc();
-            }
-
-            function recalc() {
-                const base = parseIDR(basePrice.value);
-                const disc = parseIDR(discount.value);
-                const ppjb = parseIDR(extraPpjb.value);
-                const shm = parseIDR(extraShm.value);
-                const oth = parseIDR(extraOther.value);
-                const bookingFee = parseIDR(bookingFeeInput?.value || '0');
-                const includeBookingFee = bookingFeeIncluded?.checked || false;
-
-                // Harga Netto = Harga Dasar - Diskon
-                const net = Math.max(0, base - disc);
-                // Grand Total = Harga Netto + Biaya Tambahan (PPJB, SHM, Lain)
-                // Jika TIDAK dicentang: Booking Fee ditambahkan ke Grand Total
-                // Jika dicentang (Sudah Termasuk harga unit): Booking Fee TIDAK ditambahkan karena sudah termasuk di harga dasar
-                const total = net + ppjb + shm + oth + (includeBookingFee ? 0 : bookingFee);
-                netPrice.value = formatNumber(net);
-                grandTotal.value = formatNumber(total);
-
-                // Enable booking fee for all payment methods
-                if (bookingFeeInput) {
-                    bookingFeeInput.disabled = false;
-                }
-
-                // Handle Cash Keras - full payment, disable all installment fields
-                if (paymentMethod.value === 'cash') {
-                    tenorInput.value = '';
-                    tenorInput.disabled = true;
-                    tenorInput.removeAttribute('required');
-                    dueDayInput.value = '';
-                    dueDayInput.disabled = true;
-                    dueDayInput.removeAttribute('required');
-                    dpPercentInput.value = '';
-                    dpPercentInput.disabled = true;
-                    dpInput.value = '';
-
-                    // Hide asterisks for tenor/due day
-                    document.querySelectorAll('#tenorField .req-mark, #dueDayField .req-mark').forEach(el => el.style.display = 'none');
-                    if (dpRupiahDisplay) dpRupiahDisplay.textContent = '100% (Cash Keras)';
-                    installmentEstimate.value = '100% (Cash Keras)';
-                    return;
-                }
-
-                // Handle KPR Bank - allow DP optional, tenor/due day are optional but enabled
-                if (paymentMethod.value === 'kpr') {
-                    // Keep tenor and due day enabled but optional
-                    tenorInput.disabled = false;
-                    tenorInput.removeAttribute('required');
-                    dueDayInput.disabled = false;
-                    dueDayInput.removeAttribute('required');
-                    // Hide asterisks for tenor/due day (optional)
-                    document.querySelectorAll('#tenorField .req-mark, #dueDayField .req-mark').forEach(el => el.style.display = 'none');
-
-                    // Calculate installment estimate if tenor is provided
-                    const tenor = Number(tenorInput.value || 0);
-                    const dpPercentVal = Number(dpPercentInput.value || 0);
-                    const dp = Math.max(0, Math.round(net * (dpPercentVal / 100)));
-                    dpInput.value = dp;
-                    if (dpRupiahDisplay) dpRupiahDisplay.textContent = formatIDR(dp);
-
-                    const outstanding = Math.max(0, net - dp);
-                    if (tenor > 0) {
-                        const monthly = Math.ceil(outstanding / tenor);
-                        installmentEstimate.value = formatIDR(monthly);
-                    } else {
-                        installmentEstimate.value = 'Masukkan tenor untuk estimasi';
-                    }
-
-                    // DP is optional for KPR
-                    dpPercentInput.disabled = false;
-                    return;
-                }
-
-                // Re-enable all fields for Installment
-                tenorInput.disabled = false;
-                tenorInput.setAttribute('required', 'required');
-                dueDayInput.disabled = false;
-                dueDayInput.setAttribute('required', 'required');
-                dpPercentInput.disabled = false;
-                // Show asterisks for required fields
-                document.querySelectorAll('#tenorField .req-mark, #dueDayField .req-mark').forEach(el => el.style.display = 'inline');
-
-                // Calculate DP from percentage only
-                const dpPercentVal = Number(dpPercentInput.value || 0);
-                const dp = Math.max(0, Math.round(net * (dpPercentVal / 100)));
-                dpInput.value = dp;
-
-                // Display rupiah value next to percentage input
-                if (dpRupiahDisplay) dpRupiahDisplay.textContent = formatIDR(dp);
-
-                const tenor = Number(tenorInput.value || 0);
-                const outstanding = Math.max(0, net - dp);
-                const monthly = (tenor > 0 && paymentMethod.value === 'installment') ? Math.ceil(outstanding / tenor) : outstanding;
-                installmentEstimate.value = formatIDR(monthly);
-            }
-
-            // Format currency inputs on type
-            document.querySelectorAll('.currency-input').forEach(input => {
-                input.addEventListener('input', function (e) {
-                    let cursorPosition = this.selectionStart;
-                    let oldLength = this.value.length;
-
-                    let val = this.value.replace(/\D/g, '');
-                    if (val !== '') {
-                        this.value = Number(val).toLocaleString('id-ID');
-                    } else {
-                        this.value = '';
-                    }
-
-                    let newLength = this.value.length;
-                    cursorPosition = cursorPosition + (newLength - oldLength);
-                    this.setSelectionRange(cursorPosition, cursorPosition);
-
-                    recalc();
-                });
-            });
-
-            // Strip dots on submit
-            document.getElementById('saleForm').addEventListener('submit', function (e) {
-                document.querySelectorAll('.currency-input, .readonly').forEach(input => {
-                    input.value = input.value.replace(/\./g, '');
-                });
-                // Enable disabled fields so they are submitted (if key logic requires them) 
-                // - usually disabled fields are not submitted. 
-                // If backend expects them, we should use hidden inputs. 
-                // But in this form, 'price', 'grandTotal' etc are mostly for display or calculated on backend?
-                // Let's assume backend recalculates essential totals or validates them.
-                // However, base_price IS essential.
-
-                // Also ensure dpInput is set correctly if it was relying on calc
-                // dpInput is hidden, so it's fine.
-            });
-
-            [basePrice, discount, extraPpjb, extraShm, extraOther, dpPercentInput, dpInput, tenorInput, paymentMethod].forEach(el => el?.addEventListener('input', recalc));
-            bookingFeeIncluded?.addEventListener('change', recalc);
-            // Remove previous event listeners on currency inputs to avoid double trigger if any?
-            // Actually 'input' event bubbles/multi-binds fine. 
-            // Note: recalc is called inside the currency-input listener above.
-            // But we keep this for non-currency inputs like dpPercent.
-
-            dpPercentInput?.addEventListener('input', () => { window.lastDpChange = 'percent'; recalc(); });
-            dpInput?.addEventListener('input', () => { window.lastDpChange = 'nominal'; recalc(); });
-
-            // Fix double event on keys that are currency inputs, but it doesn't hurt much.
-            // We can remove currency inputs from the array below if we want optimization.
-            const nonCurrencyInputs = [dpPercentInput, dpInput, tenorInput, paymentMethod];
-            nonCurrencyInputs.forEach(el => el?.addEventListener('input', () => {
-                if (!['percent', 'nominal'].includes(window.lastDpChange)) window.lastDpChange = null;
-                recalc();
-            }));
-
-            lotSelect?.addEventListener('change', () => {
-                window.lastDpChange = null;
-                hydrateFromLot();
-                autoFetchLotPricing(lotSelect.value, { forceDpDefaults: true });
-            });
-
-            // Prefill on first load using DB data when available
-            hydrateFromLot();
-            autoFetchLotPricing(lotSelect?.value || '');
             recalc();
-        </script>
+        }
+
+        async function autoFetchLotPricing(lotId, { forceDpDefaults = false } = {}) {
+            if (!lotId) return;
+            try {
+                const res = await fetch(`/kavling/${lotId}/pricing`, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                if (Number.isFinite(Number(data?.base_price)) && isEmptyOrZero(basePrice.value)) {
+                    basePrice.value = formatNumber(data.base_price);
+                }
+                
+                const isInstallment = paymentMethod.value === 'installment';
+                if (isInstallment) {
+                    const defaults = data?.payment_defaults || {};
+                    if ((forceDpDefaults || isEmptyOrZero(dpPercentInput.value)) && Number.isFinite(Number(defaults.dp_percent))) {
+                         dpPercentInput.value = defaults.dp_percent;
+                         // Set mode to percent by default when loading defaults
+                         if(dpType) {
+                            dpType.value = 'percent';
+                            dpType.dispatchEvent(new Event('change')); 
+                         }
+                    }
+                    if ((forceDpDefaults || isEmptyOrZero(tenorInput.value)) && Number.isFinite(Number(defaults.tenor_months))) {
+                        tenorInput.value = defaults.tenor_months;
+                    }
+                    if ((forceDpDefaults || isEmptyOrZero(dueDayInput.value)) && Number.isFinite(Number(defaults.due_day))) {
+                        dueDayInput.value = defaults.due_day;
+                    }
+                }
+            } catch (e) { }
+            recalc();
+        }
+
+        // DP Type Toggle Logic
+        dpType?.addEventListener('change', () => {
+             const isPercent = dpType.value === 'percent';
+             
+             if(isPercent) {
+                 dpPercentInput.style.display = 'block';
+                 dpNominalDisplayInput.style.display = 'none';
+                 // Update hint text
+                 dpConversiDisplay.innerHTML = 'Setara: <strong id="dpRupiahDisplay">Rp 0</strong>';
+                 
+                 // If switching back to percent, maybe recalc percent from nominal?
+                 const net = getNetPrice();
+                 const currentNominal = parseIDR(dpNominalDisplayInput.value);
+                 if(net > 0 && currentNominal > 0) {
+                     const p = (currentNominal / net) * 100;
+                     dpPercentInput.value = parseFloat(p.toFixed(2));
+                 }
+             } else {
+                 dpPercentInput.style.display = 'none';
+                 dpNominalDisplayInput.style.display = 'block';
+                 // Update hint text
+                 dpConversiDisplay.innerHTML = 'Setara: <strong id="dpCheckPercent">0%</strong>';
+                 
+                 // Prefill nominal from current hidden input
+                 const currentVal = dpInput.value;
+                 if(currentVal) dpNominalDisplayInput.value = formatNumber(currentVal);
+             }
+             recalc();
+        });
+
+        // Nominal Input Event
+        dpNominalDisplayInput?.addEventListener('input', function() {
+              window.lastDpChange = 'nominal';
+              let val = this.value.replace(/\D/g, '');
+              if (val !== '') this.value = Number(val).toLocaleString('id-ID');
+              else this.value = '';
+              recalc();
+        });
+
+        function recalc() {
+            const base = parseIDR(basePrice.value);
+            const disc = parseIDR(discount.value);
+            const ppjb = parseIDR(extraPpjb.value);
+            const shm = parseIDR(extraShm.value);
+            const oth = parseIDR(extraOther.value);
+            const bookingFee = parseIDR(bookingFeeInput?.value || '0');
+            const includeBookingFee = bookingFeeIncluded?.checked || false;
+
+            const net = Math.max(0, base - disc);
+            const total = net + ppjb + shm + oth + (includeBookingFee ? 0 : bookingFee);
+            
+            netPrice.value = formatNumber(net);
+            grandTotal.value = formatNumber(total);
+
+            if (bookingFeeInput) bookingFeeInput.disabled = false;
+
+            // Handle Cash
+            if (paymentMethod.value === 'cash') {
+                tenorInput.value = ''; tenorInput.disabled = true; tenorInput.removeAttribute('required');
+                dueDayInput.value = ''; dueDayInput.disabled = true; dueDayInput.removeAttribute('required');
+                
+                dpPercentInput.disabled = true;
+                dpNominalDisplayInput.disabled = true;
+                dpType.disabled = true; 
+                dpInput.value = '';
+                
+                document.querySelectorAll('#tenorField .req-mark, #dueDayField .req-mark').forEach(el => el.style.display = 'none');
+                
+                if(dpType.value === 'percent') {
+                   const displayEl = document.getElementById('dpRupiahDisplay');
+                   if(displayEl) displayEl.textContent = '100% (Cash Keras)';
+                } else {
+                    dpNominalDisplayInput.value = 'LUNAS (Cash)';
+                }
+                
+                installmentEstimate.value = '100% (Cash Keras)';
+                return;
+            }
+
+            // Enable inputs
+            tenorInput.disabled = false;
+            dueDayInput.disabled = false;
+            dpPercentInput.disabled = false;
+            dpNominalDisplayInput.disabled = false;
+            dpType.disabled = false;
+
+            // KPR specific logic (optional validation)
+            if (paymentMethod.value === 'kpr') {
+                tenorInput.removeAttribute('required');
+                dueDayInput.removeAttribute('required');
+                document.querySelectorAll('#tenorField .req-mark, #dueDayField .req-mark').forEach(el => el.style.display = 'none');
+            } else {
+                tenorInput.setAttribute('required', 'required');
+                dueDayInput.setAttribute('required', 'required');
+                document.querySelectorAll('#tenorField .req-mark, #dueDayField .req-mark').forEach(el => el.style.display = 'inline');
+            }
+            
+            // --- DP Calculation ---
+            let dp = 0;
+            if (dpType.value === 'percent') {
+                 // Calculate Numeric from Percent
+                 const dpPercentVal = Number(dpPercentInput.value || 0);
+                 dp = Math.max(0, Math.round(net * (dpPercentVal / 100)));
+                 
+                 // Update UI
+                 const displayEl = document.getElementById('dpRupiahDisplay');
+                 if (displayEl) displayEl.textContent = formatIDR(dp);
+                 
+                 // Update nominal input in background
+                 dpNominalDisplayInput.value = formatNumber(dp);
+            } else {
+                 // Calculate Percent from Numeric
+                 dp = parseIDR(dpNominalDisplayInput.value);
+                 
+                 let percent = 0;
+                 if(net > 0) percent = (dp / net) * 100;
+                 
+                 // Update UI
+                 const percentEl = document.getElementById('dpCheckPercent');
+                 if(percentEl) percentEl.textContent = percent.toFixed(2) + '%';
+                 
+                 // Determine if we should update the hidden percent input
+                 // Only if current mode is nominal, we might want to sync back
+                 if (document.activeElement !== dpPercentInput) {
+                    dpPercentInput.value = parseFloat(percent.toFixed(2));
+                 }
+            }
+            dpInput.value = dp;
+
+            // --- Installment ---
+            const tenor = Number(tenorInput.value || 0);
+            const outstanding = Math.max(0, net - dp);
+            
+            if (paymentMethod.value === 'kpr') {
+                 if (tenor > 0) {
+                     const monthly = Math.ceil(outstanding / tenor);
+                     installmentEstimate.value = formatIDR(monthly);
+                 } else {
+                     installmentEstimate.value = 'Masukkan tenor untuk estimasi';
+                 }
+            } else {
+                 // Regular Installment
+                 const monthly = (tenor > 0) ? Math.ceil(outstanding / tenor) : outstanding;
+                 installmentEstimate.value = formatIDR(monthly);
+            }
+        }
+
+        // Global Formatters
+        document.querySelectorAll('.currency-input').forEach(input => {
+            if(input.id === 'dpNominalDisplayInput') return; // Skip our custom one as we handled it
+            input.addEventListener('input', function (e) {
+                let cursorPosition = this.selectionStart;
+                let oldLength = this.value.length;
+                let val = this.value.replace(/\D/g, '');
+                if (val !== '') this.value = Number(val).toLocaleString('id-ID');
+                else this.value = '';
+                let newLength = this.value.length;
+                cursorPosition = cursorPosition + (newLength - oldLength);
+                this.setSelectionRange(cursorPosition, cursorPosition);
+                recalc();
+            });
+        });
+
+        // Strip dots on submit
+        document.getElementById('saleForm').addEventListener('submit', function (e) {
+            document.querySelectorAll('.currency-input, .readonly').forEach(input => {
+                input.value = input.value.replace(/\./g, '');
+            });
+            // Ensure dpInput is correct
+            // backend uses 'down_payment' (dpInput) or 'dp_percent'
+        });
+
+        [basePrice, discount, extraPpjb, extraShm, extraOther, dpPercentInput, tenorInput, paymentMethod].forEach(el => el?.addEventListener('input', recalc));
+        bookingFeeIncluded?.addEventListener('change', recalc);
+
+        lotSelect?.addEventListener('change', () => {
+            hydrateFromLot();
+            autoFetchLotPricing(lotSelect.value, { forceDpDefaults: true });
+        });
+
+        // Initialize
+        hydrateFromLot();
+        autoFetchLotPricing(lotSelect?.value || '');
+        recalc();
+    </script>
     @endpush
 @endsection
-
