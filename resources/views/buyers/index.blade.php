@@ -34,7 +34,7 @@
         <table class="table-clean">
             <thead>
                 <tr>
-                    <th style="width:60px;">ID</th>
+                    <th style="width:60px;">No.</th>
                     <th>Name</th>
                     <th style="width:180px;">Phone</th>
                     <th>Address</th>
@@ -44,7 +44,7 @@
             <tbody id="buyersTableBody">
                 @forelse ($buyers as $buyer)
                     <tr data-buyer-row data-name="{{ Str::lower($buyer->name) }}">
-                        <td>{{ $buyer->id }}</td>
+                        <td>{{ $loop->iteration }}</td>
                         <td style="font-weight:700; color:#0f172a;">{{ $buyer->name }}</td>
                         <td>{{ $buyer->phone }}</td>
                         <td>{{ $buyer->address }}</td>

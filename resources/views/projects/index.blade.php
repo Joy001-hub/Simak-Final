@@ -16,7 +16,7 @@
         <table class="table-clean">
             <thead>
                 <tr>
-                    <th style="width:50px;">ID</th>
+                    <th style="width:50px;">No.</th>
                     <th>Project Name</th>
                     <th style="width:200px;">Location</th>
                     <th>Keterangan</th>
@@ -30,7 +30,7 @@
                         $progress = $project->total_units ? round(($project->sold_units / $project->total_units) * 100) : 0;
                     @endphp
                     <tr>
-                        <td>{{ $project->id }}</td>
+                        <td>{{ $loop->iteration }}</td>
                         <td style="font-weight:700; color:#0f172a;">{{ $project->name }}</td>
                         <td>{{ $project->location }}</td>
                         <td>{{ $project->notes }}</td>

@@ -16,7 +16,7 @@
         <table class="table-clean" style="table-layout: fixed;">
             <thead>
                 <tr>
-                    <th style="width:60px;">ID</th>
+                    <th style="width:60px;">No.</th>
                     <th style="width:260px;">Name</th>
                     <th style="width:200px;">Phone</th>
                     <th style="text-align:left; width:140px; padding-left:14px;">Actions</th>
@@ -25,7 +25,7 @@
             <tbody>
                 @forelse ($teams as $person)
                     <tr>
-                        <td>{{ $person->id }}</td>
+                        <td>{{ $loop->iteration }}</td>
                         <td style="font-weight:700; color:#0f172a;">{{ $person->name }}</td>
                         <td style="white-space: nowrap;">{{ $person->phone }}</td>
                         <td style="padding-left:14px; white-space: nowrap;">
